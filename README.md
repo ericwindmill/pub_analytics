@@ -34,8 +34,10 @@ The json looks like this:
 ```
 **Note** that `date` is in millisecondsSinceEpoch in the JSON.
 
+--- 
 
 Future updates:
+
 - Add computed data to make the json more useful:
   - 'changeSinceLastUpdate' will show the rank increase or decrease each time the script is run
   - 'overAllChange' will show the rank increase or decrease since the first time the package appeared in the data
