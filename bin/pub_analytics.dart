@@ -14,10 +14,11 @@ void main(List<String> arguments) async {
   try {
     final rankedPackageNamesFromPub =
         await getOrderedPackageNames(client).then((packages) {
-      return packages.take(300).toList();
+      return packages.take(3000).toList();
     });
 
     final file = io.File(fileName);
+
     // If the file doesn't exist, this is the first time collecting this data
     if (!file.existsSync()) {
       final packages = createPackageListFromPub(rankedPackageNamesFromPub);
@@ -27,7 +28,9 @@ void main(List<String> arguments) async {
       // If the file does exist, load the rank history data and add the new
       // ranking data
       final packages = await loadPackagesFromFile(fileName);
+      final updatedPackageList = <Package>[];
       final now = DateTime.now();
+
       for (var i = 0; i < rankedPackageNamesFromPub.length; i++) {
         final package = packages.firstWhere(
             (element) => element.name == rankedPackageNamesFromPub[i],
@@ -39,13 +42,13 @@ void main(List<String> arguments) async {
             rank: i + 1,
             now: now,
           );
-          packages.add(package);
           return package;
         });
         package.addRankToRankHistory(now, i + 1);
+        updatedPackageList.add(package);
       }
-      packages.sort((a, b) => a.currentRank.compareTo(b.currentRank));
-      final packagesAsJson = packages.map((p) => p.toMap()).toList();
+      updatedPackageList.sort((a, b) => a.currentRank.compareTo(b.currentRank));
+      final packagesAsJson = updatedPackageList.map((p) => p.toMap()).toList();
       writeJsonToFile(fileName, packagesAsJson);
     }
   } finally {

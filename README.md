@@ -34,6 +34,9 @@ The json looks like this:
 ```
 **Note** that `date` is in millisecondsSinceEpoch in the JSON.
 
+The script always sorts the packages in descending order by the packages most 
+recent rank.
+
 --- 
 
 Future updates:
@@ -42,3 +45,4 @@ Future updates:
   - 'changeSinceLastUpdate' will show the rank increase or decrease each time the script is run
   - 'overAllChange' will show the rank increase or decrease since the first time the package appeared in the data
 - Write data to a Google Sheet
+- Handle packages that were previously in the top 3000 packages, but have since fallen below
