@@ -1,5 +1,7 @@
 class Package {
   final String name;
+
+  /// Rank history is descending by date
   final List<Ranking> rankHistory;
 
   Package({
@@ -8,10 +10,10 @@ class Package {
   });
 
   void addRankToRankHistory(DateTime date, int currentRank) {
-    rankHistory.add(Ranking(date, currentRank));
+    rankHistory.insert(0, Ranking(date, currentRank));
   }
 
-  int get currentRank => rankHistory.last.rank;
+  int get currentRank => rankHistory.first.rank;
 
   // DateTime is passed in so all packages that are ranked on any given date
   // have the exact same date time
@@ -30,7 +32,7 @@ class Package {
   ) {
     return Package(
         name: map['name'],
-        rankHistory: (map['rankings'] as List<Map<String, int>>)
+        rankHistory: (map['rankHistory'] as List)
             .map((r) => Ranking.fromMap(r))
             .toList());
   }
@@ -54,9 +56,8 @@ class Ranking {
 
   Ranking(this.date, this.rank);
 
-  factory Ranking.fromMap(Map<String, int> json) {
-    final date = DateTime.fromMillisecondsSinceEpoch(
-        json['millisecondsSinceEpoch'] as int);
+  factory Ranking.fromMap(Map json) {
+    final date = DateTime.fromMillisecondsSinceEpoch(json['date'] as int);
     final rank = json['rank'] as int;
 
     return Ranking(date, rank);

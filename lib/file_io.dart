@@ -9,7 +9,7 @@ Future<void> writeJsonToFile(String fileName, dynamic json) async {
   await file.writeAsString(contents);
 }
 
-Future<List<Package>> getPackagesFromFile(String fileName) async {
+Future<List<Package>> loadPackagesFromFile(String fileName) async {
   final file = File(fileName);
   final contents = await file.readAsString();
   final json = jsonDecode(contents) as List;
