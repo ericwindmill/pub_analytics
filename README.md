@@ -1,8 +1,8 @@
-If ran periodically, this script shows changes in package rankings on pub.dev. 
+If ran periodically, this script shows changes in package rankings on pub.dev.
 
-This script only looks at the current top 300 packages whenever it's ran. 
-However, the script doesn't remove packages that have fallen below the 300th spot
-since the script was last ran. Therefor, there could be more than 300 packages
+This script only looks at the current top 3000 packages whenever it's ran. 
+However, the script doesn't remove packages that have fallen below the 3000th spot
+since the script was last ran. Therefor, there could be more than 3000 packages
 in the output data, and not all packages will have the same number of rankings.
 
 Currently, package ranking history is output as a JSON file. 
@@ -34,14 +34,27 @@ The json looks like this:
 ```
 **Note** that `date` is in millisecondsSinceEpoch in the JSON.
 
-The script always sorts the packages in descending order by the packages most 
+## Usage
+
+```markdown
+Usage: pub_analytics.dart [options] [file]
+
+Fetch pub packages ranked by overall score and write results as JSON to a [file].
+
+By default, packages will be sorted by their current ranking, and in ascending order.
+
+-s, --sort-by     [currentRank (default), overallChange, recentChange]
+-d, --sort-dir    [asc (default), desc]
+    --help        Print help text and exit
+```
+
+### Sorting 
+
+By default, The script sorts the packages in ascending order by the packages most 
 recent rank.
 
---- 
+You can change the sort order and direction with flags passed to the script.
 
-Future updates:
+## Future updates
 
-- Add computed data to make the json more useful:
-  - 'changeSinceLastUpdate' will show the rank increase or decrease each time the script is run
-  - 'overAllChange' will show the rank increase or decrease since the first time the package appeared in the data
 - Write data to a Google Sheet

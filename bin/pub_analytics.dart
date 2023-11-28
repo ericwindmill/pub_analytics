@@ -1,14 +1,46 @@
 import 'dart:io' as io;
 
+import 'package:args/args.dart';
 import 'package:http/http.dart' as http;
 import 'package:pub_analytics/pub_analytics.dart';
 
+final sortBy = 'sort-by';
+final sortDir = 'sort-dir';
+
 void main(List<String> arguments) async {
-  if (arguments.isEmpty) {
-    throw ArgumentError('A filename must be provided');
+  io.exitCode = 0;
+  final argParser = ArgParser()
+    ..addOption(sortBy,
+        abbr: 's',
+        allowed: ['currentRank', 'overallChange', 'recentChange'],
+        defaultsTo: 'currentRank')
+    ..addOption(
+      sortDir,
+      abbr: 'd',
+      allowed: ['asc', 'desc'],
+      defaultsTo: 'asc',
+    )
+    ..addFlag('help', negatable: false, help: 'Print help text and exit');
+
+  ArgResults argResults = argParser.parse(arguments);
+
+  if (argResults['help'] as bool) {
+    printUsage(argParser);
+    return;
   }
 
-  final fileName = arguments[0];
+  if (argResults.rest.isEmpty || argResults.rest.length > 1) {
+    printUsage(argParser);
+    io.exitCode = 1;
+    return;
+  }
+
+  final fileName = argResults.rest.first;
+  late SortPackagesBy sortType =
+      SortPackagesBy.values.firstWhere((t) => t.name == argResults[sortBy]);
+  late SortDirection sortDirection =
+      SortDirection.values.firstWhere((d) => d.name == argResults[sortDir]);
+
   final client = http.Client();
 
   try {
@@ -19,14 +51,14 @@ void main(List<String> arguments) async {
 
     final file = io.File(fileName);
 
-    // If the file doesn't exist, this is the first time collecting this data
+// If the file doesn't exist, this is the first time collecting this data
     if (!file.existsSync()) {
       final packages = createPackageListFromPub(rankedPackageNamesFromPub);
       final packagesAsJson = packages.map((p) => p.toMap()).toList();
       writeJsonToFile(fileName, packagesAsJson);
     } else {
-      // If the file does exist, load the rank history data and add the new
-      // ranking data
+// If the file does exist, load the rank history data and add the new
+// ranking data
       final packages = await loadPackagesFromFile(fileName);
       final updatedPackageList = <Package>[];
       final now = DateTime.now();
@@ -35,9 +67,8 @@ void main(List<String> arguments) async {
         final package = packages.firstWhere(
             (element) => element.name == rankedPackageNamesFromPub[i],
             orElse: () {
-          // If there isn't data for this package, create a new package object
-          // and add it to the packages list
-          final package = Package.withCurrentRanking(
+// If there isn't data for this package, create a new package object
+          final package = Package.fromPub(
             packageName: rankedPackageNamesFromPub[i],
             rank: i + 1,
             now: now,
@@ -47,11 +78,46 @@ void main(List<String> arguments) async {
         package.addRankToRankHistory(now, i + 1);
         updatedPackageList.add(package);
       }
-      updatedPackageList.sort((a, b) => a.currentRank.compareTo(b.currentRank));
+      updatedPackageList.sortPackages(by: sortType, direction: sortDirection);
       final packagesAsJson = updatedPackageList.map((p) => p.toMap()).toList();
       writeJsonToFile(fileName, packagesAsJson);
     }
   } finally {
     client.close();
   }
+}
+
+extension on List<Package> {
+  sortPackages({
+    SortPackagesBy by = SortPackagesBy.changeSinceLastRanking,
+    SortDirection direction = SortDirection.desc,
+  }) {
+    sort((Package a, Package b) {
+      var (aField, bField) = switch (by) {
+        SortPackagesBy.currentRank => (a.currentRank, b.currentRank),
+        SortPackagesBy.changeSinceLastRanking => (
+            a.changeSinceLastRanking,
+            b.changeSinceLastRanking
+          ),
+        SortPackagesBy.overallChangeInRanking => (
+            a.overallChangeInRanking,
+            b.overallChangeInRanking
+          ),
+      };
+
+      if (direction == SortDirection.asc) return aField.compareTo(bField);
+      return bField.compareTo(aField);
+    });
+  }
+}
+
+void printUsage(ArgParser parser) {
+  print('''Usage: pub_analytics.dart [options] [file]
+
+Fetch pub packages ranked by overall score and write results as JSON to a [file].
+
+By default, packages will be sorted by their current ranking, and in ascending order.
+
+${parser.usage}
+''');
 }
