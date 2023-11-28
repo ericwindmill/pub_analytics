@@ -8,28 +8,24 @@ in the output data, and not all packages will have the same number of rankings.
 Currently, package ranking history is output as a JSON file. 
 The json looks like this:
 
-```json lines
+```json
 [
-  {
-    "name": "shared_preferences",
-    "rankHistory": [
-      {
-        "date": 1701110153320,
-        "rank": 1
-      },
-      {
-        "date": 1701108697905,
-        "rank": 1
-      },
-      // ... more rankings
-    ]
-  },
-  {
-    "name": "http",
-    "rankHistory": [
-      // ... rank history for 'http'
-    ]
-  }
+  [
+    {
+      "name": "shared_preferences",
+      "allTimeHighRanking": 1,
+      "allTimeLowRanking": 1,
+      "changeSinceLastRanking": 0,
+      "overallChangeInRanking": 0,
+      "rankHistory": [
+        {
+          "date": 1701188922952,
+          "rank": 1
+        },
+        // ... more rankings
+      ]
+    },
+    // ... other packages
 ]
 ```
 **Note** that `date` is in millisecondsSinceEpoch in the JSON.
@@ -54,7 +50,3 @@ By default, The script sorts the packages in ascending order by the packages mos
 recent rank.
 
 You can change the sort order and direction with flags passed to the script.
-
-## Future updates
-
-- Write data to a Google Sheet
