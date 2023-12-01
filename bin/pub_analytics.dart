@@ -2,6 +2,7 @@ import 'dart:io' as io;
 
 import 'package:args/args.dart';
 import 'package:http/http.dart' as http;
+import 'package:pub_analytics/csv.dart';
 import 'package:pub_analytics/pub_analytics.dart';
 
 final sortBy = 'sort-by';
@@ -51,14 +52,14 @@ void main(List<String> arguments) async {
 
     final file = io.File(fileName);
 
-// If the file doesn't exist, this is the first time collecting this data
+    // If the file doesn't exist, get fresh data from pub and start a new file
     if (!file.existsSync()) {
       final packages = createPackageListFromPub(rankedPackageNamesFromPub);
       final packagesAsJson = packages.map((p) => p.toMap()).toList();
       writeJsonToFile(fileName, packagesAsJson);
     } else {
-// If the file does exist, load the rank history data and add the new
-// ranking data
+      // If the file does exist, load the existing rank history data and add
+      // the new data to package 'rank history'
       final packages = await loadPackagesFromFile(fileName);
       final updatedPackageList = <Package>[];
       final now = DateTime.now();
@@ -67,7 +68,7 @@ void main(List<String> arguments) async {
         final package = packages.firstWhere(
             (element) => element.name == rankedPackageNamesFromPub[i],
             orElse: () {
-// If there isn't data for this package, create a new package object
+          // If there isn't data for this package, create a new package object
           final package = Package.fromPub(
             packageName: rankedPackageNamesFromPub[i],
             rank: i + 1,
@@ -78,9 +79,14 @@ void main(List<String> arguments) async {
         package.addRankToRankHistory(now, i + 1);
         updatedPackageList.add(package);
       }
+
       updatedPackageList.sortPackages(by: sortType, direction: sortDirection);
       final packagesAsJson = updatedPackageList.map((p) => p.toMap()).toList();
-      writeJsonToFile(fileName, packagesAsJson);
+
+      final filenameWithoutExtension = fileName.split('.').first;
+      writeJsonToFile(filenameWithoutExtension, packagesAsJson);
+      final asCsv = packagesToCsv(updatedPackageList);
+      writeCsvToFile(filenameWithoutExtension, asCsv);
     }
   } finally {
     client.close();
@@ -112,12 +118,15 @@ extension on List<Package> {
 }
 
 void printUsage(ArgParser parser) {
-  print('''Usage: pub_analytics.dart [options] [file]
+  print('''Usage: pub_analytics.dart [options] [filename]
 
-Fetch pub packages ranked by overall score and write results as JSON to a [file].
+Fetch pub packages ranked by overall score and write results as JSON to a 
+[filename].json, and writes results as CSV to [filename].txt.
 
-By default, packages will be sorted by their current ranking, and in ascending order.
+[file] doesn't need an extension. If you add one, it will be stripped off.
 
 ${parser.usage}
+
+By default, packages will be sorted by their current ranking, and in ascending order.
 ''');
 }

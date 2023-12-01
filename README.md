@@ -1,13 +1,19 @@
 If ran periodically, this script shows changes in package rankings on pub.dev.
+This script only looks at the current top 3000 packages whenever it's ran.
 
-This script only looks at the current top 3000 packages whenever it's ran. 
-However, the script doesn't remove packages that have fallen below the 3000th spot
-since the script was last ran. Therefor, there could be more than 3000 packages
-in the output data, and not all packages will have the same number of rankings.
+Currently, package ranking history is output as both a JSON file and a CSV file.
+The JSON is used to compile data that's easy to work with. The CSV file 
+can be imported into Google Sheets. 
 
-Currently, package ranking history is output as a JSON file. 
+The CSV looks like this:
+```text
+Name,All Time High,All Time Low,Change Since Previous,Overall Change,Date,Rank,Date,Rank,Contd...
+shared_preferences,1,1,0,0,1/12/2023,1,30/11/2023,1,29/11/2023,1,28/11/2023,1,28/11/2023,1,28/11/2023,1,28/11/2023,1,28/11/2023,1
+http,2,2,0,0,1/12/2023,2,30/11/2023,2,29/11/2023,2,28/11/2023,2,28/11/2023,2,28/11/2023,2,28/11/2023,2,28/11/2023,2
+```
+
+
 The json looks like this:
-
 ```json
 [
   [
@@ -30,23 +36,26 @@ The json looks like this:
 ```
 **Note** that `date` is in millisecondsSinceEpoch in the JSON.
 
+
 ## Usage
 
 ```markdown
-Usage: pub_analytics.dart [options] [file]
+Usage: pub_analytics.dart [options] [filename]
 
-Fetch pub packages ranked by overall score and write results as JSON to a [file].
+Fetch pub packages ranked by overall score and write results as JSON to a
+[filename].json, and writes results as CSV to [filename].txt.
 
-By default, packages will be sorted by their current ranking, and in ascending order.
+[file] doesn't need an extension. If you add one, it will be stripped off.
 
 -s, --sort-by     [currentRank (default), overallChange, recentChange]
 -d, --sort-dir    [asc (default), desc]
-    --help        Print help text and exit
+--help        Print help text and exit
+
+By default, packages will be sorted by their current ranking, and in ascending order.
 ```
 
 ### Sorting 
 
-By default, The script sorts the packages in ascending order by the packages most 
-recent rank.
+By default, The script sorts the packages in ascending order by the packages most recent rank.
 
 You can change the sort order and direction with flags passed to the script.

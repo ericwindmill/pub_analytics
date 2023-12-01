@@ -84,6 +84,27 @@ class Package {
     };
   }
 
+  List<String> toCsvRow() {
+    final historyToCsv = <String>[];
+    for (var ranking in rankHistory) {
+      historyToCsv.addAll(
+        [
+          '${ranking.date.day}/${ranking.date.month}/${ranking.date.year}',
+          ranking.rank.toString(),
+        ],
+      );
+    }
+
+    return [
+      name,
+      allTimeHighRanking.toString(),
+      allTimeLowRanking.toString(),
+      changeSinceLastRanking.toString(),
+      overallChangeInRanking.toString(),
+      ...historyToCsv,
+    ];
+  }
+
   @override
   String toString() {
     return 'Package: $name, currentRank: $currentRank';
