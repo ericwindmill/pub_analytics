@@ -16,8 +16,8 @@ class Package {
   });
 
   void addRankToRankHistory(DateTime date, int rank) {
-    if (rank > allTimeHighRanking) allTimeHighRanking = rank;
-    if (rank < allTimeLowRanking) allTimeLowRanking = rank;
+    if (rank < allTimeHighRanking) allTimeHighRanking = rank;
+    if (rank > allTimeLowRanking) allTimeLowRanking = rank;
 
     rankHistory.insert(0, Ranking(date, rank));
   }
@@ -89,7 +89,7 @@ class Package {
     for (var ranking in rankHistory) {
       historyToCsv.addAll(
         [
-          '${ranking.date.day}/${ranking.date.month}/${ranking.date.year}',
+          '${ranking.date.month}/${ranking.date.day}/${ranking.date.year}',
           ranking.rank.toString(),
         ],
       );
@@ -97,10 +97,11 @@ class Package {
 
     return [
       name,
-      allTimeHighRanking.toString(),
-      allTimeLowRanking.toString(),
+      currentRank.toString(),
       changeSinceLastRanking.toString(),
       overallChangeInRanking.toString(),
+      allTimeHighRanking.toString(),
+      allTimeLowRanking.toString(),
       ...historyToCsv,
     ];
   }

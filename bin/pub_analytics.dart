@@ -2,7 +2,6 @@ import 'dart:io' as io;
 
 import 'package:args/args.dart';
 import 'package:http/http.dart' as http;
-import 'package:pub_analytics/csv.dart';
 import 'package:pub_analytics/pub_analytics.dart';
 
 final sortBy = 'sort-by';
@@ -36,7 +35,9 @@ void main(List<String> arguments) async {
     return;
   }
 
-  final fileName = argResults.rest.first;
+  // Split in case a filename with extension is passed in.
+  final fileName = argResults.rest.first.split('.').first;
+
   late SortPackagesBy sortType =
       SortPackagesBy.values.firstWhere((t) => t.name == argResults[sortBy]);
   late SortDirection sortDirection =
@@ -50,13 +51,13 @@ void main(List<String> arguments) async {
       return packages.take(3000).toList();
     });
 
-    final file = io.File(fileName);
+    final fileExists = io.File('$fileName.json').existsSync();
 
     // If the file doesn't exist, get fresh data from pub and start a new file
-    if (!file.existsSync()) {
+    if (!fileExists) {
       final packages = createPackageListFromPub(rankedPackageNamesFromPub);
-      final packagesAsJson = packages.map((p) => p.toMap()).toList();
-      writeJsonToFile(fileName, packagesAsJson);
+      writePackagesToJsonFile(fileName, packages);
+      writePackagesToCsvFile(fileName, packages);
     } else {
       // If the file does exist, load the existing rank history data and add
       // the new data to package 'rank history'
@@ -81,13 +82,11 @@ void main(List<String> arguments) async {
       }
 
       updatedPackageList.sortPackages(by: sortType, direction: sortDirection);
-      final packagesAsJson = updatedPackageList.map((p) => p.toMap()).toList();
-
-      final filenameWithoutExtension = fileName.split('.').first;
-      writeJsonToFile(filenameWithoutExtension, packagesAsJson);
-      final asCsv = packagesToCsv(updatedPackageList);
-      writeCsvToFile(filenameWithoutExtension, asCsv);
+      writePackagesToJsonFile(fileName, packages);
+      writePackagesToCsvFile(fileName, packages);
     }
+  } catch (e) {
+    rethrow;
   } finally {
     client.close();
   }

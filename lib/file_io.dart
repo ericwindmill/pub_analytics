@@ -3,10 +3,13 @@ import 'dart:io';
 
 import 'package:csv/csv.dart';
 
+import 'csv.dart';
 import 'package.dart';
 
-Future<void> writeJsonToFile(String fileName, dynamic json) async {
-  final contents = jsonEncode(json);
+Future<void> writePackagesToJsonFile(
+    String fileName, List<Package> packages) async {
+  final packagesAsJson = packages.map((p) => p.toMap()).toList();
+  final contents = jsonEncode(packagesAsJson);
   final file = File('$fileName.json');
   await file.writeAsString(contents);
 }
@@ -21,8 +24,10 @@ Future<List<Package>> loadPackagesFromFile(String fileName) async {
   }).toList();
 }
 
-Future<void> writeCsvToFile(String filename, List<List<String>> csv) async {
-  final contents = ListToCsvConverter().convert(csv);
+Future<void> writePackagesToCsvFile(
+    String filename, List<Package> packages) async {
+  final asCsv = packagesToCsv(packages);
+  final contents = ListToCsvConverter().convert(asCsv);
   final file = File('$filename.txt');
   await file.writeAsString(contents);
 }
