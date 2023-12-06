@@ -1,9 +1,16 @@
 If ran periodically, this script shows changes in package rankings on pub.dev.
 This script only looks at the current top 3000 packages whenever it's ran.
 
-Currently, package ranking history is output as both a JSON file and a CSV file.
-The JSON is used to compile data that's easy to work with. The CSV file 
-can be imported into Google Sheets. 
+When ran, the script will output ranking history to specified JSON file. 
+First, the script checks if that JSON file exists. If it does, the script 
+loads the existing data and then adds the new ranking data to each packages 
+`rankHistory`. Otherwise, it just  creates the file with the current 
+rankings from pub.dev. 
+
+If the `--csv` flag is passed, it also generates a CSV file (after 
+creating/updating the JSON file). This CSV file is intended to be the final 
+output of the script.
+
 
 The CSV looks like this:
 ```text
@@ -47,11 +54,13 @@ Fetch pub packages ranked by overall score and write results as JSON to a
 
 [file] doesn't need an extension. If you add one, it will be stripped off.
 
+    --[no-]csv    When true, the script will also generate the new CSV file
 -s, --sort-by     [currentRank (default), overallChange, recentChange]
 -d, --sort-dir    [asc (default), desc]
 --help        Print help text and exit
 
 By default, packages will be sorted by their current ranking, and in ascending order.
+
 ```
 
 ### Sorting 

@@ -15,7 +15,7 @@ Future<void> writePackagesToJsonFile(
 }
 
 Future<List<Package>> loadPackagesFromFile(String fileName) async {
-  final file = File(fileName);
+  final file = File('$fileName.json');
   final contents = await file.readAsString();
   final json = jsonDecode(contents) as List;
 

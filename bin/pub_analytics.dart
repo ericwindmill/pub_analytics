@@ -10,6 +10,10 @@ final sortDir = 'sort-dir';
 void main(List<String> arguments) async {
   io.exitCode = 0;
   final argParser = ArgParser()
+    ..addFlag('csv',
+        defaultsTo: false,
+        help: 'When true, the script will also generate the '
+            'new CSV file')
     ..addOption(sortBy,
         abbr: 's',
         allowed: ['currentRank', 'overallChange', 'recentChange'],
@@ -29,14 +33,16 @@ void main(List<String> arguments) async {
     return;
   }
 
+  final withCsv = argResults['csv'] as bool;
   if (argResults.rest.isEmpty || argResults.rest.length > 1) {
     printUsage(argParser);
     io.exitCode = 1;
     return;
   }
 
-  // Split in case a filename with extension is passed in.
-  final fileName = argResults.rest.first.split('.').first;
+  // Remove the file extension, if any, so that we can work with .json and
+  // .txt files
+  final fileName = getFileNameWithoutExtension(argResults.rest.first);
 
   late SortPackagesBy sortType =
       SortPackagesBy.values.firstWhere((t) => t.name == argResults[sortBy]);
@@ -52,17 +58,14 @@ void main(List<String> arguments) async {
     });
 
     final fileExists = io.File('$fileName.json').existsSync();
+    final packages = fileExists
+        ? await loadPackagesFromFile(fileName)
+        : createPackageListFromPub(rankedPackageNamesFromPub);
 
-    // If the file doesn't exist, get fresh data from pub and start a new file
-    if (!fileExists) {
-      final packages = createPackageListFromPub(rankedPackageNamesFromPub);
-      writePackagesToJsonFile(fileName, packages);
-      writePackagesToCsvFile(fileName, packages);
-    } else {
-      // If the file does exist, load the existing rank history data and add
-      // the new data to package 'rank history'
-      final packages = await loadPackagesFromFile(fileName);
-      final updatedPackageList = <Package>[];
+    // If the file does exist, add the new package rankings to existing
+    // package 'rank history'
+    final updatedPackageList = <Package>[];
+    if (fileExists) {
       final now = DateTime.now();
 
       for (var i = 0; i < rankedPackageNamesFromPub.length; i++) {
@@ -80,11 +83,13 @@ void main(List<String> arguments) async {
         package.addRankToRankHistory(now, i + 1);
         updatedPackageList.add(package);
       }
-
       updatedPackageList.sortPackages(by: sortType, direction: sortDirection);
-      writePackagesToJsonFile(fileName, packages);
-      writePackagesToCsvFile(fileName, packages);
+    } else {
+      updatedPackageList.addAll(packages);
     }
+
+    writePackagesToJsonFile(fileName, updatedPackageList);
+    if (withCsv) writePackagesToCsvFile(fileName, updatedPackageList);
   } catch (e) {
     rethrow;
   } finally {
