@@ -11,8 +11,8 @@ class Package {
   Package({
     required this.name,
     required this.rankHistory,
-    this.allTimeHighRanking = -1,
-    this.allTimeLowRanking = -1,
+    required this.allTimeHighRanking,
+    required this.allTimeLowRanking,
   });
 
   void addRankToRankHistory(DateTime date, int rank) {

@@ -54,7 +54,7 @@ void main(List<String> arguments) async {
   try {
     final rankedPackageNamesFromPub =
         await getOrderedPackageNames(client).then((packages) {
-      return packages.take(3000).toList();
+      return packages.take(6000).toList();
     });
 
     final fileExists = io.File('$fileName.json').existsSync();
