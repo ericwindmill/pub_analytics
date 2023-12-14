@@ -6,6 +6,10 @@ import 'package:pub_analytics/pub_analytics.dart';
 
 final sortBy = 'sort-by';
 final sortDir = 'sort-dir';
+final count = 'count';
+
+/// Determines how many packages will be in the resulting data set.
+final defaultPackageCount = 3000;
 
 void main(List<String> arguments) async {
   io.exitCode = 0;
@@ -14,15 +18,22 @@ void main(List<String> arguments) async {
         defaultsTo: false,
         help: 'When true, the script will also generate the '
             'new CSV file')
-    ..addOption(sortBy,
-        abbr: 's',
-        allowed: ['currentRank', 'overallChange', 'recentChange'],
-        defaultsTo: 'currentRank')
+    ..addOption(
+      sortBy,
+      abbr: 's',
+      allowed: ['currentRank', 'overallChange', 'recentChange'],
+      defaultsTo: 'currentRank',
+    )
     ..addOption(
       sortDir,
       abbr: 'd',
       allowed: ['asc', 'desc'],
       defaultsTo: 'asc',
+    )
+    ..addOption(
+      count,
+      abbr: 'c',
+      defaultsTo: defaultPackageCount.toString(),
     )
     ..addFlag('help', negatable: false, help: 'Print help text and exit');
 
@@ -48,13 +59,14 @@ void main(List<String> arguments) async {
       SortPackagesBy.values.firstWhere((t) => t.name == argResults[sortBy]);
   late SortDirection sortDirection =
       SortDirection.values.firstWhere((d) => d.name == argResults[sortDir]);
+  final pkgCount = int.parse(argResults[count]);
 
   final client = http.Client();
 
   try {
     final rankedPackageNamesFromPub =
         await getOrderedPackageNames(client).then((packages) {
-      return packages.take(6000).toList();
+      return packages.take(pkgCount).toList();
     });
 
     final fileExists = io.File('$fileName.json').existsSync();
@@ -85,10 +97,16 @@ void main(List<String> arguments) async {
       }
       updatedPackageList.sortPackages(by: sortType, direction: sortDirection);
     } else {
+      // The file doesn't exist, so start with an empty data set
       updatedPackageList.addAll(packages);
     }
 
     writePackagesToJsonFile(fileName, updatedPackageList);
+
+    // Whether you write to CSV everytime you run the script, or
+    // only when you're ready to export the data doesn't affect the
+    // outcome. Writing to CSV will always include the complete data
+    // collected in the associated data json file
     if (withCsv) writePackagesToCsvFile(fileName, updatedPackageList);
   } catch (e) {
     rethrow;

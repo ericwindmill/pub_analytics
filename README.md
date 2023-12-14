@@ -1,15 +1,14 @@
 If ran periodically, this script shows changes in package rankings on pub.dev.
-This script only looks at the current top 3000 packages whenever it's ran.
 
 When ran, the script will output ranking history to specified JSON file. 
+
 First, the script checks if that JSON file exists. If it does, the script 
 loads the existing data and then adds the new ranking data to each packages 
-`rankHistory`. Otherwise, it just  creates the file with the current 
+`rankHistory`. Otherwise, it creates the file with the current 
 rankings from pub.dev. 
 
-If the `--csv` flag is passed, it also generates a CSV file (after 
-creating/updating the JSON file). This CSV file is intended to be the final 
-output of the script.
+If the `--csv` flag is passed, it also generates a CSV file (from the 
+dataset in the JSON file, after it's updated).
 
 
 The CSV looks like this:
