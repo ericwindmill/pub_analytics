@@ -56,10 +56,11 @@ Fetch pub packages ranked by overall score and write results as JSON to a
     --[no-]csv    When true, the script will also generate the new CSV file
 -s, --sort-by     [currentRank (default), overallChange, recentChange]
 -d, --sort-dir    [asc (default), desc]
+-c, --count       The number of the top N packages to be included in the dataset.
+(defaults to "3000")
 --help        Print help text and exit
 
 By default, packages will be sorted by their current ranking, and in ascending order.
-
 ```
 
 ### Sorting 

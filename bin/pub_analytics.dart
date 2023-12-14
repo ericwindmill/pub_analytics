@@ -33,6 +33,7 @@ void main(List<String> arguments) async {
     ..addOption(
       count,
       abbr: 'c',
+      help: 'The number of the top N packages to be included in the dataset.',
       defaultsTo: defaultPackageCount.toString(),
     )
     ..addFlag('help', negatable: false, help: 'Print help text and exit');
