@@ -9,6 +9,7 @@ final sortDir = 'sort-dir';
 final count = 'count';
 
 /// Determines how many packages will be in the resulting data set.
+/// Can be set with the 'count' arg
 final defaultPackageCount = 3000;
 
 void main(List<String> arguments) async {
