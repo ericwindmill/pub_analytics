@@ -11,11 +11,3 @@ Future<List<String>> getOrderedPackageNames(http.Client client) async {
   final json = jsonDecode(response.body) as Map<String, dynamic>;
   return (json['packages'] as List).cast<String>();
 }
-
-/// Returns all packages from Pub, in alphabetical order
-Future<List<String>> getPackageNames(http.Client client) async {
-  final uri = Uri.https('pub.dev', 'api/package-names');
-  var response = await client.get(uri);
-  final json = jsonDecode(response.body) as Map<String, dynamic>;
-  return (json['packages'] as List).cast<String>();
-}
