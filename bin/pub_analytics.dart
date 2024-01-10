@@ -21,7 +21,7 @@ void main(List<String> arguments) async {
     ..addOption(
       sortBy,
       abbr: 's',
-      allowed: ['currentRank', 'overallChange', 'recentChange'],
+      allowed: ['currentRank', 'allTimeChange', 'recentChange'],
       defaultsTo: 'currentRank',
     )
     ..addOption(
@@ -118,19 +118,19 @@ void main(List<String> arguments) async {
 
 extension on List<Package> {
   sortPackages({
-    SortPackagesBy by = SortPackagesBy.changeSinceLastRanking,
+    SortPackagesBy by = SortPackagesBy.currentRank,
     SortDirection direction = SortDirection.desc,
   }) {
     sort((Package a, Package b) {
       var (aField, bField) = switch (by) {
         SortPackagesBy.currentRank => (a.currentRank, b.currentRank),
-        SortPackagesBy.changeSinceLastRanking => (
+        SortPackagesBy.recentChange => (
             a.changeSinceLastRanking,
             b.changeSinceLastRanking
           ),
-        SortPackagesBy.overallChangeInRanking => (
-            a.overallChangeInRanking,
-            b.overallChangeInRanking
+        SortPackagesBy.allTimeChange => (
+            a.allTimeChange,
+            b.allTimeChange
           ),
       };
 

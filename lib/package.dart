@@ -24,15 +24,24 @@ class Package {
 
   int get currentRank => rankHistory.first.rank;
 
+  /// Change from second most recent ranking to most recent ranking
   int get changeSinceLastRanking {
     if (rankHistory.length < 2) return 0;
     return rankHistory[1].rank - rankHistory[0].rank;
   }
 
-  int get overallChangeInRanking {
+  /// Change from least recent ranking to most recent ranking
+  int get allTimeChange {
     if (rankHistory.length < 2) return 0;
     return rankHistory.last.rank - rankHistory[0].rank;
   }
+
+  /// distance between lowest ever score and current score
+  int get overallGain {
+    return allTimeLowRanking - currentRank;
+  }
+
+
 
   // DateTime is passed in so all packages that are ranked on any given date
   // have the exact same date time
@@ -79,7 +88,8 @@ class Package {
       'allTimeHighRanking': allTimeHighRanking,
       'allTimeLowRanking': allTimeLowRanking,
       'changeSinceLastRanking': changeSinceLastRanking,
-      'overallChangeInRanking': overallChangeInRanking,
+      'allTimeChange': allTimeChange,
+      'overallGain': overallGain,
       'rankHistory': rankHistory.map((r) => r.toMap()).toList()
     };
   }
@@ -99,7 +109,8 @@ class Package {
       name,
       currentRank.toString(),
       changeSinceLastRanking.toString(),
-      overallChangeInRanking.toString(),
+      overallGain.toString(),
+      allTimeChange.toString(),
       allTimeHighRanking.toString(),
       allTimeLowRanking.toString(),
       ...historyToCsv,
@@ -161,6 +172,6 @@ enum SortDirection {
 
 enum SortPackagesBy {
   currentRank,
-  changeSinceLastRanking,
-  overallChangeInRanking
+  recentChange,
+  allTimeChange,
 }

@@ -6,7 +6,8 @@ List<List<String>> packagesToCsv(List<Package> packages) {
       'Name',
       'Current Rank',
       'Change Since Previous',
-      'Overall Change',
+      'Overall Gain',
+      'All Time Change',
       'All Time High',
       'All Time Low',
       'Current Data Date',
@@ -14,7 +15,7 @@ List<List<String>> packagesToCsv(List<Package> packages) {
       'Previous Date',
       'Previous Rank',
       "Continued..."
-    ]
+    ],
   ];
 
   for (final package in packages) {
