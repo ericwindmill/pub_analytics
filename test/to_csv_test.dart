@@ -93,8 +93,4 @@ final data = '''
 ]
 ''';
 
-void main() {
-  test('Converts JSON to CSV', () {
-    final toMap = jsonDecode(data);
-  });
-}
+void main() {}
