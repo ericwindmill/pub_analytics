@@ -4,13 +4,14 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 
 import 'csv.dart';
-import 'package.dart';
+import 'model/package.dart';
+import 'model/sheet.dart';
 
 Future<void> writePackagesToJsonFile(
     String fileName, List<Package> packages) async {
   final packagesAsJson = packages.map((p) => p.toMap()).toList();
   final contents = jsonEncode(packagesAsJson);
-  final file = File('$fileName.json');
+  final file = File('${fileName}_test.json');
   await file.writeAsString(contents);
 }
 
@@ -25,9 +26,30 @@ Future<List<Package>> loadPackagesFromFile(String fileName) async {
 }
 
 Future<void> writePackagesToCsvFile(
-    String filename, List<Package> packages) async {
+  String filename,
+  List<Package> packages, {
+  bool withHistory = true,
+  bool withChart = true,
+}) async {
+  final Sheet sheet = Sheet(packages);
+
+  final converter = ListToCsvConverter();
   final asCsv = packagesToCsv(packages);
-  final contents = ListToCsvConverter().convert(asCsv);
-  final file = File('$filename.txt');
+  final contents = converter.convert(asCsv);
+  final file = File('${filename}_assessment.txt');
   await file.writeAsString(contents);
+
+  if (withHistory) {
+    final historyAsCsv = rankHistoriesToCSV(packages);
+    final contents = converter.convert(historyAsCsv);
+    final file = File('${filename}_history.txt');
+    await file.writeAsString(contents);
+  }
+
+  if (withChart) {
+    final chartFriendlyDataAsCsv = sheet.csvChartData;
+    final contents = converter.convert(chartFriendlyDataAsCsv);
+    final file = File('${filename}_history_for_chart.txt');
+    await file.writeAsString(contents);
+  }
 }

@@ -3,10 +3,22 @@ import 'dart:io' as io;
 import 'package:args/args.dart';
 import 'package:http/http.dart' as http;
 import 'package:pub_analytics/pub_analytics.dart';
+import 'package:pub_analytics/util/package_util.dart';
 
 final sortBy = 'sort-by';
 final sortDir = 'sort-dir';
 final count = 'count';
+
+enum SortDirection {
+  asc,
+  desc,
+}
+
+enum SortPackagesBy {
+  currentRank,
+  recentChange,
+  allTimeChange,
+}
 
 /// Determines how many packages will be in the resulting data set.
 /// Can be set with the 'count' arg
@@ -90,7 +102,6 @@ void main(List<String> arguments) async {
           final package = Package.fromPub(
             packageName: rankedPackageNamesFromPub[i],
             rank: i + 1,
-            now: now,
           );
           return package;
         });
@@ -129,10 +140,7 @@ extension on List<Package> {
             a.changeSinceLastRanking,
             b.changeSinceLastRanking
           ),
-        SortPackagesBy.allTimeChange => (
-            a.allTimeChange,
-            b.allTimeChange
-          ),
+        SortPackagesBy.allTimeChange => (a.allTimeChange, b.allTimeChange),
       };
 
       if (direction == SortDirection.asc) return aField.compareTo(bField);
@@ -145,7 +153,12 @@ void printUsage(ArgParser parser) {
   print('''Usage: pub_analytics.dart [options] [filename]
 
 Fetch pub packages ranked by overall score and write results as JSON to a 
-[filename].json, and writes results as CSV to [filename].txt.
+[filename].json, preserving historical data if this isn't the first time the 
+script has been run. 
+
+The package can also create metrics based on rank history, and writes results as
+CSV file to [filename]_assessment.txt. Rank history is optionally saved as CSV
+ in a file called called [filename]_history.txt.
 
 [file] doesn't need an extension. If you add one, it will be stripped off.
 

@@ -49,19 +49,28 @@ The json looks like this:
 Usage: pub_analytics.dart [options] [filename]
 
 Fetch pub packages ranked by overall score and write results as JSON to a
-[filename].json, and writes results as CSV to [filename].txt.
+[filename].json, preserving historical data if this isn't the first time the
+script has been run.
+
+The package can also create metrics based on rank history, and writes results as
+CSV file to [filename]_assessment.txt. Rank history is optionally saved as CSV
+in a file called called [filename]_history.txt.
 
 [file] doesn't need an extension. If you add one, it will be stripped off.
 
     --[no-]csv    When true, the script will also generate the new CSV file
--s, --sort-by     [currentRank (default), overallChange, recentChange]
+-s, --sort-by     [currentRank (default), allTimeChange, recentChange]
 -d, --sort-dir    [asc (default), desc]
 -c, --count       The number of the top N packages to be included in the dataset.
 (defaults to "3000")
 --help        Print help text and exit
 
 By default, packages will be sorted by their current ranking, and in ascending order.
+
 ```
+
+Note: Currently rank history data is always saved in an additional file called 
+[filename]_history.txt, it is not optional.
 
 ### Sorting 
 
