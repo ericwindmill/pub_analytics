@@ -2,9 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:csv/csv.dart';
-
-import 'csv.dart';
-import 'package.dart';
+import 'model/package.dart';
+import 'model/sheet.dart';
 
 Future<void> writePackagesToJsonFile(
     String fileName, List<Package> packages) async {
@@ -25,9 +24,23 @@ Future<List<Package>> loadPackagesFromFile(String fileName) async {
 }
 
 Future<void> writePackagesToCsvFile(
-    String filename, List<Package> packages) async {
-  final asCsv = packagesToCsv(packages);
-  final contents = ListToCsvConverter().convert(asCsv);
-  final file = File('$filename.txt');
+  String filename,
+  List<Package> packages, {
+  bool withHistory = true,
+}) async {
+  /// Todo: this class should take care of all CSV generation
+  final Sheet sheet = Sheet(packages);
+
+  final converter = ListToCsvConverter();
+  final asCsv = sheet.packagesToCsv();
+  final contents = converter.convert(asCsv);
+  final file = File('${filename}_assessment.txt');
   await file.writeAsString(contents);
+
+  if (withHistory) {
+    final chartFriendlyDataAsCsv = sheet.rankHistoriesToCsv;
+    final contents = converter.convert(chartFriendlyDataAsCsv);
+    final file = File('${filename}_history.txt');
+    await file.writeAsString(contents);
+  }
 }

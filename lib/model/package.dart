@@ -1,3 +1,5 @@
+import 'package:pub_analytics/model/ranking.dart';
+
 class Package {
   /// This name comes from pub
   final String name;
@@ -22,6 +24,34 @@ class Package {
     rankHistory.insert(0, Ranking(date, rank));
   }
 
+  /// A map of a given ranking (for example, 12), and the number of times
+  /// that rank shows up. This is used to account for random, drastic shifts in
+  /// package ranking that last for a brief amount of time
+  ///
+  /// example - package http:
+  ///
+  /// {
+  ///  "1": 12,
+  ///  "2": 3,
+  ///  "742": 1,
+  /// }
+  ///
+  /// According to this example, package http has been ranked #1 12 times,
+  /// #2 3 times, and #742 once.
+  Map<String, int> get rankDispersion {
+    final dispersion = <String, int>{};
+    for (var r in rankHistory) {
+      final key = r.rank.toString();
+      if (dispersion.containsKey(key)) {
+        dispersion[key] = dispersion[key]! + 1;
+      } else {
+        dispersion[key] = 1;
+      }
+    }
+
+    return dispersion;
+  }
+
   int get currentRank => rankHistory.first.rank;
 
   /// Change from second most recent ranking to most recent ranking
@@ -41,14 +71,11 @@ class Package {
     return allTimeLowRanking - currentRank;
   }
 
-
-
   // DateTime is passed in so all packages that are ranked on any given date
   // have the exact same date time
   factory Package.fromPub({
     required String packageName,
     required int rank,
-    required DateTime now,
   }) {
     final package = Package(
       name: packageName,
@@ -60,7 +87,7 @@ class Package {
   }
 
   factory Package.fromMap(
-    Map<String, dynamic> map,
+    Map<String, Object?> map,
   ) {
     if (map
         case {
@@ -82,7 +109,7 @@ class Package {
     }
   }
 
-  Map<String, dynamic> toMap() {
+  Map<String, Object?> toMap() {
     return {
       'name': name,
       'allTimeHighRanking': allTimeHighRanking,
@@ -90,88 +117,12 @@ class Package {
       'changeSinceLastRanking': changeSinceLastRanking,
       'allTimeChange': allTimeChange,
       'overallGain': overallGain,
-      'rankHistory': rankHistory.map((r) => r.toMap()).toList()
+      'rankHistory': rankHistory.map((r) => r.toMap()).toList(),
     };
-  }
-
-  List<String> toCsvRow() {
-    final historyToCsv = <String>[];
-    for (var ranking in rankHistory) {
-      historyToCsv.addAll(
-        [
-          '${ranking.date.month}/${ranking.date.day}/${ranking.date.year}',
-          ranking.rank.toString(),
-        ],
-      );
-    }
-
-    return [
-      name,
-      currentRank.toString(),
-      changeSinceLastRanking.toString(),
-      overallGain.toString(),
-      allTimeChange.toString(),
-      allTimeHighRanking.toString(),
-      allTimeLowRanking.toString(),
-      ...historyToCsv,
-    ];
   }
 
   @override
   String toString() {
     return 'Package: $name, currentRank: $currentRank';
   }
-}
-
-class Ranking {
-  final DateTime date;
-  final int rank;
-
-  Ranking(this.date, this.rank);
-
-  factory Ranking.fromMap(Map<String, dynamic> map) {
-    final date = DateTime.fromMillisecondsSinceEpoch(map['date'] as int);
-    final rank = map['rank'] as int;
-
-    return Ranking(date, rank);
-  }
-
-  Map<String, int> toMap() {
-    return {
-      'date': date.millisecondsSinceEpoch,
-      'rank': rank,
-    };
-  }
-}
-
-/// Creates a List of packages from a list of package names, and
-/// adds the initial [Ranking] to each [Package.rankHistory].
-///
-/// This is only used when there is no existing data (the
-/// first time this script is run), or if you want to save data to a new file
-List<Package> createPackageListFromPub(List<String> orderedPackageNames) {
-  final date = DateTime.now();
-  final packages = <Package>[];
-  for (var i = 0; i < orderedPackageNames.length; i++) {
-    packages.add(
-      Package.fromPub(
-        packageName: orderedPackageNames[i],
-        now: date,
-        rank: i + 1,
-      )..addRankToRankHistory(date, i + 1),
-    );
-  }
-
-  return packages;
-}
-
-enum SortDirection {
-  asc,
-  desc,
-}
-
-enum SortPackagesBy {
-  currentRank,
-  recentChange,
-  allTimeChange,
 }

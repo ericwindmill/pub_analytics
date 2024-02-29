@@ -16,9 +16,12 @@ void main(List<String> arguments) async {
   io.exitCode = 0;
   final argParser = ArgParser()
     ..addFlag('csv',
-        defaultsTo: false,
-        help: 'When true, the script will also generate the '
-            'new CSV file')
+        defaultsTo: true,
+        help: 'When true, the script will also generate the new CSV file')
+    ..addFlag('history',
+        defaultsTo: true,
+        help:
+            'When true, the script will also generate the a CSV file with package ranking history data.')
     ..addOption(
       sortBy,
       abbr: 's',
@@ -47,6 +50,7 @@ void main(List<String> arguments) async {
   }
 
   final withCsv = argResults['csv'] as bool;
+  final withHistory = argResults['history'] as bool;
   if (argResults.rest.isEmpty || argResults.rest.length > 1) {
     printUsage(argParser);
     io.exitCode = 1;
@@ -56,13 +60,13 @@ void main(List<String> arguments) async {
   // Remove the file extension, if any, so that we can work with .json and
   // .txt files
   final fileName = getFileNameWithoutExtension(argResults.rest.first);
-
   late SortPackagesBy sortType =
       SortPackagesBy.values.firstWhere((t) => t.name == argResults[sortBy]);
   late SortDirection sortDirection =
       SortDirection.values.firstWhere((d) => d.name == argResults[sortDir]);
   final pkgCount = int.parse(argResults[count]);
 
+  // Start analytics logic
   final client = http.Client();
 
   try {
@@ -90,7 +94,6 @@ void main(List<String> arguments) async {
           final package = Package.fromPub(
             packageName: rankedPackageNamesFromPub[i],
             rank: i + 1,
-            now: now,
           );
           return package;
         });
@@ -103,18 +106,36 @@ void main(List<String> arguments) async {
       updatedPackageList.addAll(packages);
     }
 
+    // Always write to JSON, because it's essentially the database
     writePackagesToJsonFile(fileName, updatedPackageList);
 
     // Whether you write to CSV everytime you run the script, or
     // only when you're ready to export the data doesn't affect the
     // outcome. Writing to CSV will always include the complete data
     // collected in the associated data json file
-    if (withCsv) writePackagesToCsvFile(fileName, updatedPackageList);
+    if (withCsv) {
+      writePackagesToCsvFile(
+        fileName,
+        updatedPackageList,
+        withHistory: withHistory,
+      );
+    }
   } catch (e) {
     rethrow;
   } finally {
     client.close();
   }
+}
+
+enum SortDirection {
+  asc,
+  desc,
+}
+
+enum SortPackagesBy {
+  currentRank,
+  recentChange,
+  allTimeChange,
 }
 
 extension on List<Package> {
@@ -129,10 +150,7 @@ extension on List<Package> {
             a.changeSinceLastRanking,
             b.changeSinceLastRanking
           ),
-        SortPackagesBy.allTimeChange => (
-            a.allTimeChange,
-            b.allTimeChange
-          ),
+        SortPackagesBy.allTimeChange => (a.allTimeChange, b.allTimeChange),
       };
 
       if (direction == SortDirection.asc) return aField.compareTo(bField);
@@ -145,7 +163,12 @@ void printUsage(ArgParser parser) {
   print('''Usage: pub_analytics.dart [options] [filename]
 
 Fetch pub packages ranked by overall score and write results as JSON to a 
-[filename].json, and writes results as CSV to [filename].txt.
+[filename].json, preserving historical data if this isn't the first time the 
+script has been run. 
+
+The package can also create metrics based on rank history, and writes results as
+CSV file to [filename]_assessment.txt. Rank history is optionally saved as CSV
+ in a file called called [filename]_history.txt.
 
 [file] doesn't need an extension. If you add one, it will be stripped off.
 
