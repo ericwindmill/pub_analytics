@@ -19,3 +19,9 @@ List<Package> createPackageListFromPub(List<String> orderedPackageNames) {
 
   return packages;
 }
+
+Package getPackageWithMostHistoryData(List<Package> packages) {
+  final copy = packages;
+  copy.sort((a, b) => b.rankHistory.length.compareTo(a.rankHistory.length));
+  return copy.first;
+}

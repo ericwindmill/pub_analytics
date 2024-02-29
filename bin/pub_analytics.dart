@@ -3,22 +3,10 @@ import 'dart:io' as io;
 import 'package:args/args.dart';
 import 'package:http/http.dart' as http;
 import 'package:pub_analytics/pub_analytics.dart';
-import 'package:pub_analytics/util/package_util.dart';
 
 final sortBy = 'sort-by';
 final sortDir = 'sort-dir';
 final count = 'count';
-
-enum SortDirection {
-  asc,
-  desc,
-}
-
-enum SortPackagesBy {
-  currentRank,
-  recentChange,
-  allTimeChange,
-}
 
 /// Determines how many packages will be in the resulting data set.
 /// Can be set with the 'count' arg
@@ -28,9 +16,12 @@ void main(List<String> arguments) async {
   io.exitCode = 0;
   final argParser = ArgParser()
     ..addFlag('csv',
-        defaultsTo: false,
-        help: 'When true, the script will also generate the '
-            'new CSV file')
+        defaultsTo: true,
+        help: 'When true, the script will also generate the new CSV file')
+    ..addFlag('history',
+        defaultsTo: true,
+        help:
+            'When true, the script will also generate the a CSV file with package ranking history data.')
     ..addOption(
       sortBy,
       abbr: 's',
@@ -59,6 +50,7 @@ void main(List<String> arguments) async {
   }
 
   final withCsv = argResults['csv'] as bool;
+  final withHistory = argResults['history'] as bool;
   if (argResults.rest.isEmpty || argResults.rest.length > 1) {
     printUsage(argParser);
     io.exitCode = 1;
@@ -68,13 +60,13 @@ void main(List<String> arguments) async {
   // Remove the file extension, if any, so that we can work with .json and
   // .txt files
   final fileName = getFileNameWithoutExtension(argResults.rest.first);
-
   late SortPackagesBy sortType =
       SortPackagesBy.values.firstWhere((t) => t.name == argResults[sortBy]);
   late SortDirection sortDirection =
       SortDirection.values.firstWhere((d) => d.name == argResults[sortDir]);
   final pkgCount = int.parse(argResults[count]);
 
+  // Start analytics logic
   final client = http.Client();
 
   try {
@@ -114,18 +106,36 @@ void main(List<String> arguments) async {
       updatedPackageList.addAll(packages);
     }
 
+    // Always write to JSON, because it's essentially the database
     writePackagesToJsonFile(fileName, updatedPackageList);
 
     // Whether you write to CSV everytime you run the script, or
     // only when you're ready to export the data doesn't affect the
     // outcome. Writing to CSV will always include the complete data
     // collected in the associated data json file
-    if (withCsv) writePackagesToCsvFile(fileName, updatedPackageList);
+    if (withCsv) {
+      writePackagesToCsvFile(
+        fileName,
+        updatedPackageList,
+        withHistory: withHistory,
+      );
+    }
   } catch (e) {
     rethrow;
   } finally {
     client.close();
   }
+}
+
+enum SortDirection {
+  asc,
+  desc,
+}
+
+enum SortPackagesBy {
+  currentRank,
+  recentChange,
+  allTimeChange,
 }
 
 extension on List<Package> {

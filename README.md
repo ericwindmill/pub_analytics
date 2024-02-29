@@ -58,15 +58,17 @@ in a file called called [filename]_history.txt.
 
 [file] doesn't need an extension. If you add one, it will be stripped off.
 
-    --[no-]csv    When true, the script will also generate the new CSV file
--s, --sort-by     [currentRank (default), allTimeChange, recentChange]
--d, --sort-dir    [asc (default), desc]
--c, --count       The number of the top N packages to be included in the dataset.
+    --[no-]csv        When true, the script will also generate the new CSV file
+                      (defaults to on)
+    --[no-]history    When true, the script will also generate the a CSV file with package ranking history data.
+                      (defaults to on)
+-s, --sort-by         [currentRank (default), allTimeChange, recentChange]
+-d, --sort-dir        [asc (default), desc]
+-c, --count           The number of the top N packages to be included in the dataset.
 (defaults to "3000")
---help        Print help text and exit
+--help            Print help text and exit
 
 By default, packages will be sorted by their current ranking, and in ascending order.
-
 ```
 
 Note: Currently rank history data is always saved in an additional file called 
