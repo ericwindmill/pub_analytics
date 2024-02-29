@@ -18,7 +18,7 @@ void main(List<String> arguments) async {
   io.exitCode = 0;
   final argParser = ArgParser()
     ..addFlag('csv',
-        defaultsTo: true,
+        defaultsTo: false,
         help: 'When true, the script will also generate the new CSV file')
     ..addFlag('history',
         defaultsTo: true,
@@ -67,7 +67,7 @@ void main(List<String> arguments) async {
   late SortDirection sortDirection =
       SortDirection.values.firstWhere((d) => d.name == argResults[sortDir]);
   final pkgCount = int.parse(argResults[count]);
-  final allTimeRankHistoryDataFileName = 'alltime_rank_history_data';
+  final allTimeRankHistoryDataFileName = './assets/alltime_rank_history_data';
   final client = http.Client();
 
   // Start analytics logic
@@ -115,7 +115,7 @@ void _generateAnalyticsForFile({
   final fileExists = io.File('$fileName.json').existsSync();
   List<Package> packages;
   if (fileExists) {
-    packages = await loadPackagesFromFile(fileName);
+    packages = await loadPackageDataFromFile(fileName);
     packages = _updatePackageHistory(packages, newPubData);
   } else {
     packages = createPackageListFromPub(newPubData);
@@ -156,14 +156,16 @@ Future<void> _writeToFiles(
   bool withCsv,
   bool withHistory,
 ) async {
+  final sheet = Sheet(packageData);
+
   // Always write to JSON, because it's the database
-  writePackagesToJsonFile(fileName, packageData);
+  writePackageDataToJsonFile(fileName, packageData);
 
   if (withCsv) {
-    writePackagesToCsvFile(
-      fileName,
-      packageData,
-      withHistory: withHistory,
-    );
+    generatePackageAssessmentCsv(fileName, sheet);
+  }
+
+  if (withHistory) {
+    generateHistoryCsv(fileName, sheet);
   }
 }

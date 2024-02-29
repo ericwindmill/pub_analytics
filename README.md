@@ -55,35 +55,45 @@ The following `txt` files are **optionally generated**, and only need to be gene
 Ideally, the script is run often and at set intervals (i.e. daily or weekly), to build a robust data set. Then, when you're ready to assess the data, you run the script with the `--csv` flag to generate the appropriate files. 
 
 
-The CSV looks like this:
+The generated CSV assessment files looks like this:
 
 ```text
-Name,All Time High,All Time Low,Change Since Previous,Overall Change,Date,Rank,Date,Rank,Contd...
-shared_preferences,1,1,0,0,1/12/2023,1,30/11/2023,1,29/11/2023,1,28/11/2023,1,28/11/2023,1,28/11/2023,1,28/11/2023,1,28/11/2023,1
-http,2,2,0,0,1/12/2023,2,30/11/2023,2,29/11/2023,2,28/11/2023,2,28/11/2023,2,28/11/2023,2,28/11/2023,2,28/11/2023,2
+Name,Current rank,Change since previous,Overall gain,All time change,All time high,All time low,Most common rank,Most common rank occurrence,Second most common rank,Second most common rank occurrence,Continued...
+googleapis_auth,1000,-12,1359,32,973,2359,1032,5,1058,4,1082,2,2312,2,1036,2,1000,1,988,1,973,1,2316,1,2359,1,1086,1,1081,1,1053,1,1050,1,1037,1
+shared_preferences,2,0,738,721,1,740,1,12,2,11,740,1,723,1
 ```
 
-The json looks like this:
+The generated json looks like this:
 
 ```json
-[
-  [
+{
+  "name": "http",
+  "allTimeHighRanking": 1,
+  "allTimeLowRanking": 734,
+  "rankHistory": [
     {
-      "name": "shared_preferences",
-      "allTimeHighRanking": 1,
-      "allTimeLowRanking": 1,
-      "changeSinceLastRanking": 0,
-      "overallChangeInRanking": 0,
-      "rankHistory": [
-        {
-          "date": 1701188922952,
-          "rank": 1
-        }
-        // ... more rankings
-      ]
-    }
-    // ... other packages
+      "date": 1709225014616,
+      "rank": 1
+    },
+    {
+      "date": 1709060660004,
+      "rank": 1
+    },
+    {
+      "date": 1708526151271,
+      "rank": 1
+    },
+    {
+      "date": 1707921606669,
+      "rank": 1
+    },
+    {
+      "date": 1707316874898,
+      "rank": 1
+    },
+    ...
   ]
+}
 ```
 
 **Note** that `date` is in millisecondsSinceEpoch in the JSON.
@@ -92,13 +102,13 @@ The json looks like this:
 ```markdown
 Usage: pub_analytics.dart [options] [filename]
 
-Fetch pub packages ranked by overall score and write results as JSON to a
-[filename].json, preserving historical data if this isn't the first time the
-script has been run.
+Fetch pub packages ranked by overall score and write results as JSON to a 
+[filename].json, preserving historical data if this isn't the first time the 
+script has been run. 
 
 The package can also create metrics based on rank history, and writes results as
 CSV file to [filename]_assessment.txt. Rank history is optionally saved as CSV
-in a file called called [filename]_history.txt.
+ in a file called called [filename]_history.txt.
 
 [file] doesn't need an extension. If you add one, it will be stripped off.
 
@@ -106,15 +116,14 @@ in a file called called [filename]_history.txt.
                       (defaults to on)
     --[no-]history    When true, the script will also generate the a CSV file with package ranking history data.
                       (defaults to on)
-
 -s, --sort-by         [currentRank (default), allTimeChange, recentChange]
 -d, --sort-dir        [asc (default), desc]
--c, --count The number of the top N packages to be included in the dataset.
-(defaults to "3000")
---help Print help text and exit
+-c, --count           The number of the top N packages to be included in the dataset.
+                      (defaults to "3000")
+    --help            Print help text and exit
 
-By default, packages will be sorted by their current ranking, and in ascending
-order.
+By default, packages will be sorted by their current ranking, and in ascending order.
+
 ```
 
 ### Sorting
