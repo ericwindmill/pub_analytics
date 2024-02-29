@@ -44,10 +44,10 @@ These Json files are not optional. They are essentially the database for the scr
 * **alltime_rank_history_data.json** - This file will update everytime the
   script is run with the new ranking data, forever.
 
-The following `txt` files are optional, and only need to be generated when you're ready to assess the data.
-* **[filename]_history.txt** (optional*)- This file includes CSV data _only_ for the rank history. It doesn't include any of the metrics that the package creates from the data set (i.e. Overall gain). This file is formatted to optimize for easy chart-making in Google Sheets.
-* **[filename]_assessment.txt** (optional*) - This CSV file includes all the other metrics, but does not include rank history data.
-* **alltime_rank_assessment.txt** (optional*) - This file creates the assessment metrics against the all-time rank data.
+The following `txt` files are **optionally generated**, and only need to be generated when you're ready to assess the data.
+* **[filename]_history.txt** - This file includes CSV data _only_ for the rank history. It doesn't include any of the metrics that the package creates from the data set (i.e. Overall gain). This file is formatted to optimize for easy chart-making in Google Sheets.
+* **[filename]_assessment.txt** - This CSV file includes all the other metrics, but does not include rank history data.
+* **alltime_rank_assessment.txt** - This file creates the assessment metrics against the all-time rank data.
 
 
 ## Usage

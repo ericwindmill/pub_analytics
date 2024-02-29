@@ -114,15 +114,7 @@ class Package {
       'name': name,
       'allTimeHighRanking': allTimeHighRanking,
       'allTimeLowRanking': allTimeLowRanking,
-      'changeSinceLastRanking': changeSinceLastRanking,
-      'allTimeChange': allTimeChange,
-      'overallGain': overallGain,
       'rankHistory': rankHistory.map((r) => r.toMap()).toList(),
     };
-  }
-
-  @override
-  String toString() {
-    return 'Package: $name, currentRank: $currentRank';
   }
 }

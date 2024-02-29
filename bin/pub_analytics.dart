@@ -4,6 +4,8 @@ import 'package:args/args.dart';
 import 'package:http/http.dart' as http;
 import 'package:pub_analytics/pub_analytics.dart';
 
+import 'util.dart';
+
 final sortBy = 'sort-by';
 final sortDir = 'sort-dir';
 final count = 'count';
@@ -51,75 +53,50 @@ void main(List<String> arguments) async {
 
   final withCsv = argResults['csv'] as bool;
   final withHistory = argResults['history'] as bool;
-  if (argResults.rest.isEmpty || argResults.rest.length > 1) {
+
+  // There should be at most 1 argument, which is the filename to write data
+  // to that isn't the `alltime_rank_history_data.json`
+  if (argResults.rest.length > 1) {
     printUsage(argParser);
     io.exitCode = 1;
     return;
   }
 
-  // Remove the file extension, if any, so that we can work with .json and
-  // .txt files
-  final fileName = getFileNameWithoutExtension(argResults.rest.first);
   late SortPackagesBy sortType =
       SortPackagesBy.values.firstWhere((t) => t.name == argResults[sortBy]);
   late SortDirection sortDirection =
       SortDirection.values.firstWhere((d) => d.name == argResults[sortDir]);
   final pkgCount = int.parse(argResults[count]);
-
-  // Start analytics logic
+  final allTimeRankHistoryDataFileName = 'alltime_rank_history_data';
   final client = http.Client();
 
+  // Start analytics logic
   try {
-    final rankedPackageNamesFromPub =
-        await getOrderedPackageNames(client).then((packages) {
+    final newPubData = await getOrderedPackageNames(client).then((packages) {
       return packages.take(pkgCount).toList();
     });
 
-    final fileExists = io.File('$fileName.json').existsSync();
-    final packages = fileExists
-        ? await loadPackagesFromFile(fileName)
-        : createPackageListFromPub(rankedPackageNamesFromPub);
-
-    // If the file does exist, add the new package rankings to existing
-    // package 'rank history'
-    final updatedPackageList = <Package>[];
-    if (fileExists) {
-      final now = DateTime.now();
-
-      for (var i = 0; i < rankedPackageNamesFromPub.length; i++) {
-        final package = packages.firstWhere(
-            (element) => element.name == rankedPackageNamesFromPub[i],
-            orElse: () {
-          // If there isn't data for this package, create a new package object
-          final package = Package.fromPub(
-            packageName: rankedPackageNamesFromPub[i],
-            rank: i + 1,
-          );
-          return package;
-        });
-        package.addRankToRankHistory(now, i + 1);
-        updatedPackageList.add(package);
-      }
-      updatedPackageList.sortPackages(by: sortType, direction: sortDirection);
-    } else {
-      // The file doesn't exist, so start with an empty data set
-      updatedPackageList.addAll(packages);
-    }
-
-    // Always write to JSON, because it's essentially the database
-    writePackagesToJsonFile(fileName, updatedPackageList);
-
-    // Whether you write to CSV everytime you run the script, or
-    // only when you're ready to export the data doesn't affect the
-    // outcome. Writing to CSV will always include the complete data
-    // collected in the associated data json file
-    if (withCsv) {
-      writePackagesToCsvFile(
-        fileName,
-        updatedPackageList,
+    // If a file name is passed in create that data in addition to "alltime" data
+    if (argResults.rest.length == 1) {
+      final fileName = getFileNameWithoutExtension(argResults.rest.first);
+      _generateAnalyticsForFile(
+        fileName: fileName,
+        newPubData: newPubData,
+        sortType: sortType,
+        sortDirection: sortDirection,
+        withCsv: withCsv,
         withHistory: withHistory,
       );
     }
+
+    _generateAnalyticsForFile(
+      fileName: allTimeRankHistoryDataFileName,
+      newPubData: newPubData,
+      sortType: sortType,
+      sortDirection: sortDirection,
+      withCsv: withCsv,
+      withHistory: withHistory,
+    );
   } catch (e) {
     rethrow;
   } finally {
@@ -127,53 +104,66 @@ void main(List<String> arguments) async {
   }
 }
 
-enum SortDirection {
-  asc,
-  desc,
-}
-
-enum SortPackagesBy {
-  currentRank,
-  recentChange,
-  allTimeChange,
-}
-
-extension on List<Package> {
-  sortPackages({
-    SortPackagesBy by = SortPackagesBy.currentRank,
-    SortDirection direction = SortDirection.desc,
-  }) {
-    sort((Package a, Package b) {
-      var (aField, bField) = switch (by) {
-        SortPackagesBy.currentRank => (a.currentRank, b.currentRank),
-        SortPackagesBy.recentChange => (
-            a.changeSinceLastRanking,
-            b.changeSinceLastRanking
-          ),
-        SortPackagesBy.allTimeChange => (a.allTimeChange, b.allTimeChange),
-      };
-
-      if (direction == SortDirection.asc) return aField.compareTo(bField);
-      return bField.compareTo(aField);
-    });
+void _generateAnalyticsForFile({
+  required String fileName,
+  required List<String> newPubData,
+  required SortPackagesBy sortType,
+  required SortDirection sortDirection,
+  required bool withCsv,
+  required bool withHistory,
+}) async {
+  final fileExists = io.File('$fileName.json').existsSync();
+  List<Package> packages;
+  if (fileExists) {
+    packages = await loadPackagesFromFile(fileName);
+    packages = _updatePackageHistory(packages, newPubData);
+  } else {
+    packages = createPackageListFromPub(newPubData);
   }
+  packages.sortPackages(by: sortType, direction: sortDirection);
+  _writeToFiles(fileName, packages, withCsv, withHistory);
 }
 
-void printUsage(ArgParser parser) {
-  print('''Usage: pub_analytics.dart [options] [filename]
+List<Package> _updatePackageHistory(
+  List<Package> existingPackageData,
+  List<String> newPackageData,
+) {
+  // If the file does exist, add the new package rankings to existing
+  // package 'rank history'
+  final updatedPackageList = <Package>[];
+  final now = DateTime.now();
 
-Fetch pub packages ranked by overall score and write results as JSON to a 
-[filename].json, preserving historical data if this isn't the first time the 
-script has been run. 
+  for (var i = 0; i < newPackageData.length; i++) {
+    final package = existingPackageData
+        .firstWhere((element) => element.name == newPackageData[i], orElse: () {
+      // If there isn't data for this package, create a new package object
+      final package = Package.fromPub(
+        packageName: newPackageData[i],
+        rank: i + 1,
+      );
+      return package;
+    });
+    package.addRankToRankHistory(now, i + 1);
+    updatedPackageList.add(package);
+  }
 
-The package can also create metrics based on rank history, and writes results as
-CSV file to [filename]_assessment.txt. Rank history is optionally saved as CSV
- in a file called called [filename]_history.txt.
+  return updatedPackageList;
+}
 
-[file] doesn't need an extension. If you add one, it will be stripped off.
+Future<void> _writeToFiles(
+  String fileName,
+  List<Package> packageData,
+  bool withCsv,
+  bool withHistory,
+) async {
+  // Always write to JSON, because it's the database
+  writePackagesToJsonFile(fileName, packageData);
 
-${parser.usage}
-
-By default, packages will be sorted by their current ranking, and in ascending order.
-''');
+  if (withCsv) {
+    writePackagesToCsvFile(
+      fileName,
+      packageData,
+      withHistory: withHistory,
+    );
+  }
 }
