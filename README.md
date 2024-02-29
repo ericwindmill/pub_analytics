@@ -1,25 +1,70 @@
-If ran periodically, this script shows changes in package rankings on pub.dev.
+## Pub analytics
 
-When ran, the script will output ranking history to specified JSON file. 
+If ran periodically, this script shows changes in package rankings on [pub.dev](https://pub.dev), based on pub's "score", which itself is based on popularity and it's [Pana score](https://pub.dev/packages/pana).
 
-First, the script checks if that JSON file exists. If it does, the script 
-loads the existing data and then adds the new ranking data to each packages 
-`rankHistory`. Otherwise, it creates the file with the current 
-rankings from pub.dev. 
+When ran, the script outputs several files as JSON and CSV, which attempt to
+assess package ranking changes overtime.
 
-If the `--csv` flag is passed, it also generates a CSV file (from the 
-dataset in the JSON file, after it's updated).
+### Rank history and metrics
+
+The script, when ran, adds a new data point to any given packages "rank history", which contains a datetime and ranking. For example, a package's recent history could be:
+
+```
+package: {
+   rankHistory: [
+     { date: 1/1/24, rank: 2 }
+     { date: 1/2/24, rank: 4 }
+     { date: 1/3/24, rank: 7 }
+     .... 
+   ]
+}
+```
+**Note**: In the actual data, the date is saved as `millisecondsSinceEpoch` and the existing dataset was based on running the script at unusual intervals. 
+
+The script then uses the existing history to create the following metrics each time a new "ranking" is is added to rank history. (All metrics are as of the most recent time the script was run.)
+* Current rank 
+* All-time low rank
+* All-time high rank
+* Changes since previous - the distance between the current rank and the rank the last time the script was run
+* Overall change - the distance between the package's all-time low and the current rank
+* All-time change - the distance between the package's least current rank and the most current rank
+* Rank dispersion - a series of data-points that track the number of occurrences of any given rank for a particular package. For example, in the current dataset, as of February 28th, 2024, package `provider`'s rank dispersion looks like this:
+  * Rank:4 occurrences:14	
+  * Rank:3 occurrences:10	
+  * Rank:2 occurrence:1
+
+Many of these metrics are useful because they reveal "bad data". For unknown reasons, there are often sudden, massive swings in the ratings for a single package. For example, the top package is usually `http`. In December 2023, the package fell to 734 for ~2 days, but has otherwise always been #1. Having several metrics which show growth/loss makes it easy to spot bad data. 
+
+## Output files
+
+The script outputs the following files (note that `[filename]` below represents the user defined base filename, which is passed to the script.)
+
+These Json files are not optional. They are essentially the database for the script.
+* **[filename].json** - This file will update with new rank history everytime the script is run _with the same filename_. For example, I change the filename every quarter to start a new dataset.
+* **alltime_rank_history_data.json** - This file will update everytime the
+  script is run with the new ranking data, forever.
+
+The following `txt` files are optional, and only need to be generated when you're ready to assess the data.
+* **[filename]_history.txt** (optional*)- This file includes CSV data _only_ for the rank history. It doesn't include any of the metrics that the package creates from the data set (i.e. Overall gain). This file is formatted to optimize for easy chart-making in Google Sheets.
+* **[filename]_assessment.txt** (optional*) - This CSV file includes all the other metrics, but does not include rank history data.
+* **alltime_rank_assessment.txt** (optional*) - This file creates the assessment metrics against the all-time rank data.
+
+
+## Usage
+
+Ideally, the script is run often and at set intervals (i.e. daily or weekly), to build a robust data set. Then, when you're ready to assess the data, you run the script with the `--csv` flag to generate the appropriate files. 
 
 
 The CSV looks like this:
+
 ```text
 Name,All Time High,All Time Low,Change Since Previous,Overall Change,Date,Rank,Date,Rank,Contd...
 shared_preferences,1,1,0,0,1/12/2023,1,30/11/2023,1,29/11/2023,1,28/11/2023,1,28/11/2023,1,28/11/2023,1,28/11/2023,1,28/11/2023,1
 http,2,2,0,0,1/12/2023,2,30/11/2023,2,29/11/2023,2,28/11/2023,2,28/11/2023,2,28/11/2023,2,28/11/2023,2,28/11/2023,2
 ```
 
-
 The json looks like this:
+
 ```json
 [
   [
@@ -33,17 +78,16 @@ The json looks like this:
         {
           "date": 1701188922952,
           "rank": 1
-        },
+        }
         // ... more rankings
       ]
-    },
+    }
     // ... other packages
-]
+  ]
 ```
+
 **Note** that `date` is in millisecondsSinceEpoch in the JSON.
 
-
-## Usage
 
 ```markdown
 Usage: pub_analytics.dart [options] [filename]
@@ -62,20 +106,20 @@ in a file called called [filename]_history.txt.
                       (defaults to on)
     --[no-]history    When true, the script will also generate the a CSV file with package ranking history data.
                       (defaults to on)
+
 -s, --sort-by         [currentRank (default), allTimeChange, recentChange]
 -d, --sort-dir        [asc (default), desc]
--c, --count           The number of the top N packages to be included in the dataset.
+-c, --count The number of the top N packages to be included in the dataset.
 (defaults to "3000")
---help            Print help text and exit
+--help Print help text and exit
 
-By default, packages will be sorted by their current ranking, and in ascending order.
+By default, packages will be sorted by their current ranking, and in ascending
+order.
 ```
 
-Note: Currently rank history data is always saved in an additional file called 
-[filename]_history.txt, it is not optional.
+### Sorting
 
-### Sorting 
-
-By default, The script sorts the packages in ascending order by the packages most recent rank.
+By default, The script sorts the packages in ascending order by the packages
+most recent rank.
 
 You can change the sort order and direction with flags passed to the script.
