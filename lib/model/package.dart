@@ -48,7 +48,6 @@ class Package {
         dispersion[key] = 1;
       }
     }
-
     return dispersion;
   }
 
@@ -69,6 +68,17 @@ class Package {
   /// distance between lowest ever score and current score
   int get overallGain {
     return allTimeLowRanking - currentRank;
+  }
+
+  int get mostCommonRankDiff {
+    if (rankDispersion.length < 2) return 0;
+    final sortedEntries = rankDispersion.entries.toList();
+    sortedEntries.sort((a, b) => b.value.compareTo(a.value));
+
+    final mostCommonRank = int.parse(sortedEntries.first.key);
+    final secondMostCommonRank = int.parse(sortedEntries[1].key);
+
+    return (mostCommonRank - secondMostCommonRank);
   }
 
   // DateTime is passed in so all packages that are ranked on any given date

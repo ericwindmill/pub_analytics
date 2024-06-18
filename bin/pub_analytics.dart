@@ -9,21 +9,22 @@ import 'util.dart';
 final sortBy = 'sort-by';
 final sortDir = 'sort-dir';
 final count = 'count';
+final printFlag = 'print';
 
-/// Determines how many packages will be in the resulting data set.
-/// Can be set with the 'count' arg
-final defaultPackageCount = 3000;
+
+// final defaultPackageCount = 5000;
 
 void main(List<String> arguments) async {
   io.exitCode = 0;
   final argParser = ArgParser()
     ..addFlag('csv',
         defaultsTo: false,
-        help: 'When true, the script will also generate the new CSV file')
-    ..addFlag('history',
-        defaultsTo: true,
+        help: 'When true, the script will also generate a CSV file with the data called <filename>_history.txt')
+    ..addFlag('assessment',
+        abbr: 'a',
+        defaultsTo: false,
         help:
-            'When true, the script will also generate the a CSV file with package ranking history data.')
+        'When true, the script will also generate a CSV file with computed metrics called <filename>_assessment.txt')
     ..addOption(
       sortBy,
       abbr: 's',
@@ -42,6 +43,12 @@ void main(List<String> arguments) async {
       help: 'The number of the top N packages to be included in the dataset.',
       defaultsTo: defaultPackageCount.toString(),
     )
+    ..addFlag(
+      printFlag,
+      abbr: 'p',
+      help: 'Prints the packages with the top 10 movers score.',
+      defaultsTo: false,
+    )
     ..addFlag('help', negatable: false, help: 'Print help text and exit');
 
   ArgResults argResults = argParser.parse(arguments);
@@ -52,10 +59,11 @@ void main(List<String> arguments) async {
   }
 
   final withCsv = argResults['csv'] as bool;
-  final withHistory = argResults['history'] as bool;
+  final withAssessment = argResults['assessment'] as bool;
+  final printMoversScore = argResults['print'] as bool;
 
-  // There should be at most 1 argument, which is the filename to write data
-  // to that isn't the `alltime_rank_history_data.json`
+  // There should be at most 1 argument (not including flags),
+  // which is the base filename to write data to.
   if (argResults.rest.length > 1) {
     printUsage(argParser);
     io.exitCode = 1;
@@ -67,7 +75,7 @@ void main(List<String> arguments) async {
   late SortDirection sortDirection =
       SortDirection.values.firstWhere((d) => d.name == argResults[sortDir]);
   final pkgCount = int.parse(argResults[count]);
-  final allTimeRankHistoryDataFileName = './assets/alltime_rank_history_data';
+  final allTimeRankHistoryDataFileName = './assets/all_time_rank_history';
   final client = http.Client();
 
   // Start analytics logic
@@ -76,8 +84,9 @@ void main(List<String> arguments) async {
       return packages.take(pkgCount).toList();
     });
 
-    // If a file name is passed in create that data in addition to "alltime" data
+    // If a file name is passed in create that data in addition to "all time" data
     if (argResults.rest.length == 1) {
+      /// Generate for passed in file
       final fileName = getFileNameWithoutExtension(argResults.rest.first);
       _generateAnalyticsForFile(
         fileName: fileName,
@@ -85,7 +94,8 @@ void main(List<String> arguments) async {
         sortType: sortType,
         sortDirection: sortDirection,
         withCsv: withCsv,
-        withHistory: withHistory,
+        withAssessment: withAssessment,
+          printMoversScore: printMoversScore
       );
     }
 
@@ -95,7 +105,8 @@ void main(List<String> arguments) async {
       sortType: sortType,
       sortDirection: sortDirection,
       withCsv: withCsv,
-      withHistory: withHistory,
+      withAssessment: withAssessment,
+      printMoversScore: printMoversScore
     );
   } catch (e) {
     rethrow;
@@ -110,7 +121,8 @@ void _generateAnalyticsForFile({
   required SortPackagesBy sortType,
   required SortDirection sortDirection,
   required bool withCsv,
-  required bool withHistory,
+  required bool withAssessment,
+  required bool printMoversScore,
 }) async {
   final fileExists = io.File('$fileName.json').existsSync();
   List<Package> packages;
@@ -121,7 +133,16 @@ void _generateAnalyticsForFile({
     packages = createPackageListFromPub(newPubData);
   }
   packages.sortPackages(by: sortType, direction: sortDirection);
-  _writeToFiles(fileName, packages, withCsv, withHistory);
+
+  if (printMoversScore) {
+    printMoversScores(packages);
+
+    if (!withCsv && !withAssessment) {
+      return;
+    }
+  }
+
+  _writeToFiles(fileName, packages, withCsv, withAssessment,);
 }
 
 List<Package> _updatePackageHistory(
@@ -154,7 +175,7 @@ Future<void> _writeToFiles(
   String fileName,
   List<Package> packageData,
   bool withCsv,
-  bool withHistory,
+  bool withAssessment,
 ) async {
   final sheet = Sheet(packageData);
 
@@ -162,10 +183,22 @@ Future<void> _writeToFiles(
   writePackageDataToJsonFile(fileName, packageData);
 
   if (withCsv) {
+    generateHistoryCsv(fileName, sheet);
+  }
+
+  if (withAssessment) {
     generatePackageAssessmentCsv(fileName, sheet);
   }
 
-  if (withHistory) {
-    generateHistoryCsv(fileName, sheet);
+}
+
+void printMoversScores(List<Package> packageData) {
+  final sheet = Sheet(packageData);
+  final top10Packages = sheet.packages.take(10);
+  final packageHistoryCount = getPackageWithMostHistoryData(packageData);
+
+  for (var p in top10Packages) {
+    final score = getPackageMoverScore(p, packageHistoryCount.rankHistory.length);
+    print('${p.name}   -    $score');
   }
 }
