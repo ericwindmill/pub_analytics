@@ -6,9 +6,11 @@ import 'package.dart';
 class Sheet {
   List<DateTime> dates = [];
   List<Package> packages;
+  int packageHistoryCount = 0;
 
   Sheet(this.packages) {
     final p = getPackageWithMostHistoryData(packages);
+    packageHistoryCount = p.rankHistory.length;
     for (var r in p.rankHistory.reversed) {
       dates.add(r.date);
     }
@@ -105,6 +107,7 @@ class Sheet {
       package.mostCommonRankDiff.toString(),
       package.allTimeHighRanking.toString(),
       package.allTimeLowRanking.toString(),
+      // package.packageMoverScore(packageHistoryCount).toString(),
       ...rankDispersionToCsv,
     ];
   }

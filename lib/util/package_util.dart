@@ -1,3 +1,5 @@
+import 'package:pub_analytics/pub_analytics.dart';
+
 import '../model/package.dart';
 
 /// Creates a List of packages from a list of package names, and
@@ -27,40 +29,80 @@ Package getPackageWithMostHistoryData(List<Package> packages) {
 }
 
 class Weights {
-  static double overAllGain = 1.2;
-  static double allTimeChange = 1.3;
+  static double currentRank = 1.0;
+  static double overallGain = 1.0;
+  static double allTimeChange = 1.0;
+  //
   static double mostCommonRankDiff = 1.1;
-  static double currentRank = 1.1;
+  static double numDifferentRanks = 1.0;
+  static double packageRankHistoryCount = 1.0;
+  static double allTimeHighRanking = 1.0;
+  static double allTimeLowRanking = 1.0;
+  static double changeSinceLastRanking = 1.0;
 }
 
-int getPackageMoverScore(Package package, int totalHistoryCount) {
+
+const int rangeMin = 0;
+const int rangeMax = 100;
+
+double convertToNewRange({
+  required int oldMax,
+  required int oldMin,
+   int newMax = rangeMax,
+   int newMin = rangeMin,
+  required int oldValue,
+}) {
+  var oldRange = (oldMax - oldMin);
+  var newRange = (newMax - newMin);
+  var newValue = (((oldValue - oldMin) * newRange) / oldRange) + newMin;
+  return newValue;
+}
+
+int getPackageMoverScore(
+    Package package, int totalHistoryCount, int totalPackageCount) {
+  /// For each metric:
+  /// * Determine the range of possible numbers (i.e. currentRank range = total package count)
+  /// * Convert that range into a common range (0 to totalPackageCount)
+  /// * Convert the metric score to that range
+  /// * multiple the new metric score by its weight
+  ///
+  /// Current Rank - Range: totalPackageCount (low) to 0 (high)
+  var convertedCurrentRank = convertToNewRange(
+    oldMax: 0,
+    oldMin: totalPackageCount,
+    oldValue: package.currentRank,
+  );
+  var currentRankScore = convertedCurrentRank * Weights.currentRank;
+
+  /// Overall Gain - Range: 0 (low) to totalPackageCount (high)
+  var convertedOverallGain = convertToNewRange(
+    oldMax: totalPackageCount,
+    oldMin: 0,
+    oldValue: package.currentRank,
+  );
+  var overAllGainScore = convertedOverallGain * Weights.overallGain;
+
+  /// All time change - Range:-totalPackageCount to totalPackageCount
+  var convertedAllTimeChange = convertToNewRange(
+    oldMax:  totalPackageCount,
+    oldMin: -totalPackageCount,
+      oldValue: package.allTimeChange);
+  var allTimeChangeScore = convertedAllTimeChange * Weights.allTimeChange;
+
+  ///
+
   var packageHistoryCount = package.rankHistory.length;
+
   final packageDispersion = package.rankDispersion.entries.toList();
   packageDispersion.sort((a, b) => b.value.compareTo(a.value));
   final numDifferentRanks = packageDispersion.length;
 
-  // // compare numDifferentRanks, package num rankings, and totalNumRankings
-  // // In general, more different ranks and more ranks in general means the rise is stable
-  // Map<String, double> weights = {
-  //   'allTimeChange': 1.3,
-  //   'overallGain': 1.2,
-  //   'mostCommonRankDiff': 1.1,
-  //   'numDifferentRanks': 1.1,
-  //   'packageHistoryCount': 1.1,
-  //   'currentRank': 1.1,
-  //   'allTimeHighRanking': 1,
-  //   'allTimeLowRanking': 1,
-  //   'changeSinceLastRanking': 1,
-  // };
-
   var baseScore = 0;
-  var overAllGainScore = (package.overallGain / 1000) * Weights.overAllGain;
-  var allTimeChangeScore =
-      (package.allTimeChange / 1000) * Weights.allTimeChange;
+
   // var mostCommonRankDiffScore =
   //     (package.mostCommonRankDiff / 1000) * Weights.mostCommonRankDiff;
-  var currentRankScore =
-      ((5000 - package.currentRank) / 1000) * Weights.currentRank;
+  // var currentRankScore =
+  //     ((5000 - package.currentRank) / 1000) * Weights.currentRank;
 
   var packageHistoryCountRatio = (packageHistoryCount / totalHistoryCount) + 1;
   var packageHistoryCountScore = 2;
@@ -70,12 +112,6 @@ int getPackageMoverScore(Package package, int totalHistoryCount) {
   // weights add up to 1.0
   // (scoreX * weight) + (scoreY * weight)
 
-  return (overAllGainScore +
-          allTimeChangeScore +
-          currentRankScore)
+  return ((overAllGainScore + allTimeChangeScore + currentRankScore) / 3)
       .toInt();
-
-
 }
-
-

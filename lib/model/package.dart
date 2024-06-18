@@ -1,4 +1,5 @@
 import 'package:pub_analytics/model/ranking.dart';
+import 'package:pub_analytics/util/package_util.dart';
 
 class Package {
   /// This name comes from pub
@@ -77,9 +78,10 @@ class Package {
 
     final mostCommonRank = int.parse(sortedEntries.first.key);
     final secondMostCommonRank = int.parse(sortedEntries[1].key);
-
     return (mostCommonRank - secondMostCommonRank);
   }
+
+  int getMoverScore(int totalRankHistoryCount, int totalPackageCount) => getPackageMoverScore(this, totalRankHistoryCount, totalPackageCount);
 
   // DateTime is passed in so all packages that are ranked on any given date
   // have the exact same date time

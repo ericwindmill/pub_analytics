@@ -11,20 +11,20 @@ final sortDir = 'sort-dir';
 final count = 'count';
 final printFlag = 'print';
 
-
-// final defaultPackageCount = 5000;
+final defaultPackageCount = 3000;
 
 void main(List<String> arguments) async {
   io.exitCode = 0;
   final argParser = ArgParser()
     ..addFlag('csv',
         defaultsTo: false,
-        help: 'When true, the script will also generate a CSV file with the data called <filename>_history.txt')
+        help:
+            'When true, the script will also generate a CSV file with the data called <filename>_history.txt')
     ..addFlag('assessment',
         abbr: 'a',
         defaultsTo: false,
         help:
-        'When true, the script will also generate a CSV file with computed metrics called <filename>_assessment.txt')
+            'When true, the script will also generate a CSV file with computed metrics called <filename>_assessment.txt')
     ..addOption(
       sortBy,
       abbr: 's',
@@ -46,7 +46,7 @@ void main(List<String> arguments) async {
     ..addFlag(
       printFlag,
       abbr: 'p',
-      help: 'Prints the packages with the top 10 movers score.',
+      help: 'Prints the packages with the all-time top 10 movers score.',
       defaultsTo: false,
     )
     ..addFlag('help', negatable: false, help: 'Print help text and exit');
@@ -75,7 +75,7 @@ void main(List<String> arguments) async {
   late SortDirection sortDirection =
       SortDirection.values.firstWhere((d) => d.name == argResults[sortDir]);
   final pkgCount = int.parse(argResults[count]);
-  final allTimeRankHistoryDataFileName = './assets/all_time_rank_history';
+  final allTimeRankHistoryDataFileName = './assets/all_time_rank_history_data';
   final client = http.Client();
 
   // Start analytics logic
@@ -88,34 +88,33 @@ void main(List<String> arguments) async {
     if (argResults.rest.length == 1) {
       /// Generate for passed in file
       final fileName = getFileNameWithoutExtension(argResults.rest.first);
-      _generateAnalyticsForFile(
-        fileName: fileName,
+      await _generateAnalyticsForFile(
+          fileName: fileName,
+          newPubData: newPubData,
+          sortType: sortType,
+          sortDirection: sortDirection,
+          withCsv: withCsv,
+          withAssessment: withAssessment,
+          printMoversScore: printMoversScore);
+    }
+
+    await _generateAnalyticsForFile(
+        fileName: allTimeRankHistoryDataFileName,
         newPubData: newPubData,
         sortType: sortType,
         sortDirection: sortDirection,
         withCsv: withCsv,
         withAssessment: withAssessment,
-          printMoversScore: printMoversScore
-      );
-    }
-
-    _generateAnalyticsForFile(
-      fileName: allTimeRankHistoryDataFileName,
-      newPubData: newPubData,
-      sortType: sortType,
-      sortDirection: sortDirection,
-      withCsv: withCsv,
-      withAssessment: withAssessment,
-      printMoversScore: printMoversScore
-    );
+        printMoversScore: printMoversScore);
   } catch (e) {
+    print(e);
     rethrow;
   } finally {
     client.close();
   }
 }
 
-void _generateAnalyticsForFile({
+Future<void> _generateAnalyticsForFile({
   required String fileName,
   required List<String> newPubData,
   required SortPackagesBy sortType,
@@ -124,7 +123,7 @@ void _generateAnalyticsForFile({
   required bool withAssessment,
   required bool printMoversScore,
 }) async {
-  final fileExists = io.File('$fileName.json').existsSync();
+  final fileExists = await io.File('$fileName.json').exists();
   List<Package> packages;
   if (fileExists) {
     packages = await loadPackageDataFromFile(fileName);
@@ -142,7 +141,12 @@ void _generateAnalyticsForFile({
     }
   }
 
-  _writeToFiles(fileName, packages, withCsv, withAssessment,);
+  _writeToFiles(
+    fileName,
+    packages,
+    withCsv,
+    withAssessment,
+  );
 }
 
 List<Package> _updatePackageHistory(
@@ -189,16 +193,23 @@ Future<void> _writeToFiles(
   if (withAssessment) {
     generatePackageAssessmentCsv(fileName, sheet);
   }
-
 }
 
 void printMoversScores(List<Package> packageData) {
   final sheet = Sheet(packageData);
-  final top10Packages = sheet.packages.take(10);
   final packageHistoryCount = getPackageWithMostHistoryData(packageData);
 
-  for (var p in top10Packages) {
-    final score = getPackageMoverScore(p, packageHistoryCount.rankHistory.length);
-    print('${p.name}   -    $score');
+  Map<String, int> scores = {};
+
+  for (var p in sheet.packages) {
+    final score = getPackageMoverScore(p, packageHistoryCount.rankHistory.length, packageData.length);
+    scores[p.name] = score;
+  }
+
+  final sortedScores = Map.fromEntries(scores.entries.toList()..sort((b, a) => a.value.compareTo(b.value)));
+  final top10 = sortedScores.entries.take(100);
+
+  for (var p in top10) {
+    print('${p.key}  --  ${p.value}');
   }
 }
