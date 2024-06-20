@@ -2,8 +2,6 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import 'model/package.dart';
-
 /// This endpoint returns the top 20,000 packages,
 /// ordered by their over all rank on pub.dev
 /// https://pub.dev/help/api#package-names-for-name-completion

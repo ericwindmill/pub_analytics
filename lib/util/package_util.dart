@@ -1,3 +1,5 @@
+import 'package:pub_analytics/pub_analytics.dart';
+
 import '../model/package.dart';
 
 /// Creates a List of packages from a list of package names, and

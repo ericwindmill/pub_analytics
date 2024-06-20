@@ -6,9 +6,11 @@ import 'package.dart';
 class Sheet {
   List<DateTime> dates = [];
   List<Package> packages;
+  int packageHistoryCount = 0;
 
   Sheet(this.packages) {
     final p = getPackageWithMostHistoryData(packages);
+    packageHistoryCount = p.rankHistory.length;
     for (var r in p.rankHistory.reversed) {
       dates.add(r.date);
     }
@@ -48,9 +50,10 @@ class Sheet {
     final csvAssessmentData = <List<String>>[
       [
         'Name',
-        'Current rank',
+        'Mover Score',
+        'Rank',
         'Change since previous',
-        'Overall gain',
+        'Overall change',
         'All time change',
         'All time high',
         'All time low',
@@ -59,6 +62,19 @@ class Sheet {
         'Second most common rank',
         'Second most common rank occurrence',
         'Continued...',
+      ],
+      [
+        'package name',
+        'Score based on all the other metrics',
+        'current rank',
+        'distance between current rank current-1 rank',
+        'distance between package all-time low and the current rank',
+        'distance between package least current rank and the most current rank',
+        'highest package rank',
+        'lowest package rank',
+        'rank that occurs most often',
+        'number of times that rank has occurred',
+        'etc',
       ],
     ];
 
@@ -84,54 +100,16 @@ class Sheet {
 
     return [
       package.name,
+      package
+          .getPackageMoverScore(packageHistoryCount, packages.length)
+          .toString(),
       package.currentRank.toString(),
       package.changeSinceLastRanking.toString(),
-      package.overallGain.toString(),
+      package.overallChange.toString(),
       package.allTimeChange.toString(),
       package.allTimeHighRanking.toString(),
       package.allTimeLowRanking.toString(),
       ...rankDispersionToCsv,
-    ];
-  }
-
-  // Todo: no longer used. remove?
-  List<List<String>> rankHistoriesToCSV() {
-    final csvRankHistory = <List<String>>[
-      [
-        'Name',
-        'Current rank',
-        'Current data date',
-        'Current data rank',
-        'Previous date',
-        'Previous rank',
-        "Continued..."
-      ],
-    ];
-
-    for (final package in packages) {
-      final historyAsCsvRow = packageRankHistoryToCsvRow(package);
-      csvRankHistory.add(historyAsCsvRow);
-    }
-
-    return csvRankHistory;
-  }
-
-  // Todo: no longer used. remove?
-  List<String> packageRankHistoryToCsvRow(Package package) {
-    final historyToCsv = <String>[];
-    for (var ranking in package.rankHistory) {
-      historyToCsv.addAll(
-        [
-          '${ranking.date.month}/${ranking.date.day}/${ranking.date.year}',
-          ranking.rank.toString(),
-        ],
-      );
-    }
-
-    return [
-      package.name,
-      package.currentRank.toString(),
-      ...historyToCsv,
     ];
   }
 }

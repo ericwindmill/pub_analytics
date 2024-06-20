@@ -1,5 +1,7 @@
 import 'package:pub_analytics/model/ranking.dart';
 
+import '../util/util.dart';
+
 class Package {
   /// This name comes from pub
   final String name;
@@ -48,7 +50,6 @@ class Package {
         dispersion[key] = 1;
       }
     }
-
     return dispersion;
   }
 
@@ -67,8 +68,90 @@ class Package {
   }
 
   /// distance between lowest ever score and current score
-  int get overallGain {
+  int get overallChange {
     return allTimeLowRanking - currentRank;
+  }
+
+  /// This attempts to take all the relevant stats, and combine them into one score.
+  /// This score uses heuristics to determine how much weight should be given to
+  /// each different metric.
+  ///
+  /// Heuristics:
+  /// * packages that move up quickly are more likely to have
+  ///    juiced stats than packages that move up slowly.
+  /// * packages that have been in the top N packages consistently are more
+  ///   likely to valuable than packages that suddenly pop-up at a high ranking
+  /// * if two packages have increased at the same rate, the package that has a higher
+  ///   current and/or all-time rank is more valuable than the other
+  ///
+  /// Getting a score for each metric:
+  /// * Determine the range of possible numbers (i.e. currentRank range = total number of packages to 1)
+  /// * Convert that range into a common range (1 to 100)
+  /// * Convert the metric score to that range
+  /// * multiple the new metric score by its weight
+  ///
+  int getPackageMoverScore(
+    int totalHistoryCount,
+    int totalPackageCount,
+  ) {
+    /// Current Rank - Range: totalPackageCount (low) to 1 (high)
+    var convertedCurrentRank = convertRange(
+      oldMax: 1,
+      oldMin: totalPackageCount,
+      oldValue: currentRank,
+    );
+    var currentRankScore = convertedCurrentRank * _Weights.currentRank;
+
+    /// All time high rank - Range: totalPackageCount (low) to 1 (high)
+    var convertedAllTimeHigh = convertRange(
+      oldMax: 1,
+      oldMin: totalPackageCount,
+      oldValue: allTimeHighRanking,
+    );
+    var allTimeHighScore = convertedAllTimeHigh * _Weights.allTimeHighRanking;
+
+    /// Overall Gain - Range: 0 (low) to totalPackageCount (high)
+    var convertedOverallGain = convertRange(
+      oldMax: totalPackageCount,
+      oldMin: 0,
+      oldValue: currentRank,
+    );
+    var overAllGainScore = convertedOverallGain * _Weights.overallGain;
+
+    /// All time change - Range:-totalPackageCount to totalPackageCount
+    var convertedAllTimeChange = convertRange(
+        oldMax: totalPackageCount,
+        oldMin: -totalPackageCount,
+        oldValue: allTimeChange);
+    var allTimeChangeScore = convertedAllTimeChange * _Weights.allTimeChange;
+
+    /// Num different ranks - Range: 0 to totalHistoryCount
+    var convertedNumDifferentRanks = convertRange(
+      oldMax: totalHistoryCount,
+      oldMin: 0,
+      oldValue: rankDispersion.length,
+    );
+    var numDifferentRanksScore =
+        convertedNumDifferentRanks * _Weights.numDifferentRanks;
+
+    /// Total times ranked - Range: 0 to totalHistoryCount
+    var convertedPackageHistoryCount = convertRange(
+      oldMax: totalHistoryCount,
+      oldMin: 0,
+      oldValue: rankHistory.length,
+    );
+    var packageHistoryCountScore =
+        convertedPackageHistoryCount * _Weights.packageRankHistoryCount;
+
+    var totalPoints = overAllGainScore +
+        allTimeHighScore +
+        allTimeChangeScore +
+        currentRankScore +
+        numDifferentRanksScore +
+        packageHistoryCountScore;
+
+    /// There are 6 metrics total
+    return (totalPoints / 6).toInt();
   }
 
   // DateTime is passed in so all packages that are ranked on any given date
@@ -117,4 +200,13 @@ class Package {
       'rankHistory': rankHistory.map((r) => r.toMap()).toList(),
     };
   }
+}
+
+class _Weights {
+  static double currentRank = 1.0;
+  static double overallGain = 1.0;
+  static double allTimeChange = 1.0;
+  static double numDifferentRanks = 1.0;
+  static double packageRankHistoryCount = 1.0;
+  static double allTimeHighRanking = 1.0;
 }
