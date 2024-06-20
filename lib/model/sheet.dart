@@ -50,11 +50,11 @@ class Sheet {
     final csvAssessmentData = <List<String>>[
       [
         'Name',
+        'Mover Score',
         'Rank',
         'Change since previous',
-        'Overall gain',
+        'Overall change',
         'All time change',
-        'Most common diff',
         'All time high',
         'All time low',
         'Most common rank',
@@ -65,11 +65,11 @@ class Sheet {
       ],
       [
         'package name',
+        'Score based on all the other metrics',
         'current rank',
         'distance between current rank current-1 rank',
         'distance between package all-time low and the current rank',
         'distance between package least current rank and the most current rank',
-        'distance between package most common rank and second most common rank',
         'highest package rank',
         'lowest package rank',
         'rank that occurs most often',
@@ -100,14 +100,15 @@ class Sheet {
 
     return [
       package.name,
+      package
+          .getPackageMoverScore(packageHistoryCount, packages.length)
+          .toString(),
       package.currentRank.toString(),
       package.changeSinceLastRanking.toString(),
-      package.overallGain.toString(),
+      package.overallChange.toString(),
       package.allTimeChange.toString(),
-      package.mostCommonRankDiff.toString(),
       package.allTimeHighRanking.toString(),
       package.allTimeLowRanking.toString(),
-      // package.packageMoverScore(packageHistoryCount).toString(),
       ...rankDispersionToCsv,
     ];
   }

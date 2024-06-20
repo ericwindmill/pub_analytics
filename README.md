@@ -19,10 +19,10 @@ package: {
    ]
 }
 ```
-**Note**: In the actual data, the date is saved as `millisecondsSinceEpoch` and the existing dataset was based on running the script at unusual intervals. 
 
-The script then uses the existing history to create the following metrics each time a new "ranking" is is added to rank history. (All metrics are as of the most recent time the script was run.)
+The script then uses the existing history to create the following metrics each time a new "ranking" is added to rank history. (All metrics are as of the most recent time the script was run.)
 * Current rank 
+* Mover score - A weighted average of all other metrics
 * All-time low rank
 * All-time high rank
 * Changes since previous - the distance between the current rank and the rank the last time the script was run
@@ -102,28 +102,25 @@ The generated json looks like this:
 ```markdown
 Usage: pub_analytics.dart [options] [filename]
 
-Fetch pub packages ranked by overall score and write results as JSON to a 
-[filename].json, preserving historical data if this isn't the first time the 
-script has been run. 
+Fetch pub packages ranked by overall score and write results as JSON to a
+[filename].json, preserving historical data if this isn't the first time the
+script has been run.
 
 The package can also create metrics based on rank history, and writes results as
 CSV file to [filename]_assessment.txt. Rank history is optionally saved as CSV
- in a file called called [filename]_history.txt.
+in a file called called [filename]_history.txt.
 
 [file] doesn't need an extension. If you add one, it will be stripped off.
 
-    --[no-]csv        When true, the script will also generate the new CSV file
-                      (defaults to on)
-    --[no-]history    When true, the script will also generate the a CSV file with package ranking history data.
-                      (defaults to on)
--s, --sort-by         [currentRank (default), allTimeChange, recentChange]
--d, --sort-dir        [asc (default), desc]
--c, --count           The number of the top N packages to be included in the dataset.
-                      (defaults to "3000")
-    --help            Print help text and exit
+    --[no-]csv           When true, the script will also generate a CSV file with the data called <filename>_history.txt
+-a, --[no-]assessment    When true, the script will also generate a CSV file with computed metrics called <filename>_assessment.txt
+-s, --sort-by            [currentRank (default), allTimeChange, recentChange]
+-d, --sort-dir           [asc (default), desc]
+-c, --count              The number of the top N packages to be included in the dataset. (defaults to "3000")
+-p, --[no-]print         Prints the packages with the all-time top 10 movers score. If true, no data will be written to any files. Useful for testing.
+--help               Print help text and exit
 
 By default, packages will be sorted by their current ranking, and in ascending order.
-
 ```
 
 ### Sorting

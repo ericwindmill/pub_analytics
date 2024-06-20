@@ -19,12 +19,14 @@ void main(List<String> arguments) async {
     ..addFlag('csv',
         defaultsTo: false,
         help:
-            'When true, the script will also generate a CSV file with the data called <filename>_history.txt')
+            'When true, the script will also generate a CSV file with the data '
+            'called <filename>_history.txt')
     ..addFlag('assessment',
         abbr: 'a',
         defaultsTo: false,
         help:
-            'When true, the script will also generate a CSV file with computed metrics called <filename>_assessment.txt')
+            'When true, the script will also generate a CSV file with computed '
+            'metrics called <filename>_assessment.txt')
     ..addOption(
       sortBy,
       abbr: 's',
@@ -46,7 +48,8 @@ void main(List<String> arguments) async {
     ..addFlag(
       printFlag,
       abbr: 'p',
-      help: 'Prints the packages with the all-time top 10 movers score.',
+      help: 'Prints the packages with the all-time top 10 movers score. '
+          'If true, no data will be written to any files. Useful for testing.',
       defaultsTo: false,
     )
     ..addFlag('help', negatable: false, help: 'Print help text and exit');
@@ -78,34 +81,52 @@ void main(List<String> arguments) async {
   final allTimeRankHistoryDataFileName = './assets/all_time_rank_history_data';
   final client = http.Client();
 
-  // Start analytics logic
+  // Start biz logic
   try {
     final newPubData = await getOrderedPackageNames(client).then((packages) {
       return packages.take(pkgCount).toList();
     });
 
-    // If a file name is passed in create that data in addition to "all time" data
+    // If a file name is passed in, create or update that file in addition to
+    // the 'all time data' file
     if (argResults.rest.length == 1) {
-      /// Generate for passed in file
       final fileName = getFileNameWithoutExtension(argResults.rest.first);
-      await _generateAnalyticsForFile(
-          fileName: fileName,
-          newPubData: newPubData,
-          sortType: sortType,
-          sortDirection: sortDirection,
-          withCsv: withCsv,
-          withAssessment: withAssessment,
-          printMoversScore: printMoversScore);
-    }
-
-    await _generateAnalyticsForFile(
-        fileName: allTimeRankHistoryDataFileName,
+      final packages = await _generateAnalytics(
+        fileName: fileName,
         newPubData: newPubData,
         sortType: sortType,
         sortDirection: sortDirection,
-        withCsv: withCsv,
-        withAssessment: withAssessment,
-        printMoversScore: printMoversScore);
+      );
+      if (printMoversScore) {
+        _printMoversScores(packages);
+      } else {
+        _writeToFiles(
+          fileName,
+          packages,
+          withCsv,
+          withAssessment,
+        );
+      }
+    }
+
+    /// Always do process for all-time data
+    final packages = await _generateAnalytics(
+      fileName: allTimeRankHistoryDataFileName,
+      newPubData: newPubData,
+      sortType: sortType,
+      sortDirection: sortDirection,
+    );
+    if (printMoversScore) {
+      _printMoversScores(packages);
+      return;
+    } else {
+      _writeToFiles(
+        allTimeRankHistoryDataFileName,
+        packages,
+        withCsv,
+        withAssessment,
+      );
+    }
   } catch (e) {
     print(e);
     rethrow;
@@ -114,15 +135,11 @@ void main(List<String> arguments) async {
   }
 }
 
-Future<void> _generateAnalyticsForFile({
-  required String fileName,
-  required List<String> newPubData,
-  required SortPackagesBy sortType,
-  required SortDirection sortDirection,
-  required bool withCsv,
-  required bool withAssessment,
-  required bool printMoversScore,
-}) async {
+Future<List<Package>> _generateAnalytics(
+    {required String fileName,
+    required List<String> newPubData,
+    required SortPackagesBy sortType,
+    required SortDirection sortDirection}) async {
   final fileExists = await io.File('$fileName.json').exists();
   List<Package> packages;
   if (fileExists) {
@@ -133,20 +150,7 @@ Future<void> _generateAnalyticsForFile({
   }
   packages.sortPackages(by: sortType, direction: sortDirection);
 
-  if (printMoversScore) {
-    printMoversScores(packages);
-
-    if (!withCsv && !withAssessment) {
-      return;
-    }
-  }
-
-  _writeToFiles(
-    fileName,
-    packages,
-    withCsv,
-    withAssessment,
-  );
+  return packages;
 }
 
 List<Package> _updatePackageHistory(
@@ -185,30 +189,29 @@ Future<void> _writeToFiles(
 
   // Always write to JSON, because it's the database
   writePackageDataToJsonFile(fileName, packageData);
-
-  if (withCsv) {
-    generateHistoryCsv(fileName, sheet);
-  }
-
-  if (withAssessment) {
-    generatePackageAssessmentCsv(fileName, sheet);
-  }
+  if (withCsv) generateHistoryCsv(fileName, sheet);
+  if (withAssessment) generatePackageAssessmentCsv(fileName, sheet);
 }
 
-void printMoversScores(List<Package> packageData) {
+void _printMoversScores(List<Package> packageData) {
   final sheet = Sheet(packageData);
   final packageHistoryCount = getPackageWithMostHistoryData(packageData);
 
   Map<String, int> scores = {};
 
   for (var p in sheet.packages) {
-    final score = getPackageMoverScore(p, packageHistoryCount.rankHistory.length, packageData.length);
+    final score = p.getPackageMoverScore(
+      packageHistoryCount.rankHistory.length,
+      packageData.length,
+    );
     scores[p.name] = score;
   }
 
-  final sortedScores = Map.fromEntries(scores.entries.toList()..sort((b, a) => a.value.compareTo(b.value)));
-  final top10 = sortedScores.entries.take(100);
+  final sortedScores = Map.fromEntries(
+      scores.entries.toList()..sort((b, a) => a.value.compareTo(b.value)));
+  final top10 = sortedScores.entries.take(10);
 
+  print('--- Top 10 by movers score ---');
   for (var p in top10) {
     print('${p.key}  --  ${p.value}');
   }
