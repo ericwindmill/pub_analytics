@@ -1,5 +1,5 @@
 const int rangeMin = 0;
-const int rangeMax = 100;
+const int rangeMax = 1000;
 
 double convertRange({
   required int oldMax,

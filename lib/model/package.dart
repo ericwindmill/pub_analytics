@@ -114,15 +114,16 @@ class Package {
     var convertedOverallGain = convertRange(
       oldMax: totalPackageCount,
       oldMin: 0,
-      oldValue: currentRank,
+      oldValue: overallChange,
     );
     var overAllGainScore = convertedOverallGain * _Weights.overallGain;
 
     /// All time change - Range:-totalPackageCount to totalPackageCount
     var convertedAllTimeChange = convertRange(
-        oldMax: totalPackageCount,
-        oldMin: -totalPackageCount,
-        oldValue: allTimeChange);
+      oldMax: totalPackageCount,
+      oldMin: -totalPackageCount,
+      oldValue: allTimeChange,
+    );
     var allTimeChangeScore = convertedAllTimeChange * _Weights.allTimeChange;
 
     /// Num different ranks - Range: 0 to totalHistoryCount
@@ -203,10 +204,13 @@ class Package {
 }
 
 class _Weights {
-  static double currentRank = 1.0;
-  static double overallGain = 1.0;
-  static double allTimeChange = 1.0;
-  static double numDifferentRanks = 1.0;
-  static double packageRankHistoryCount = 1.0;
-  static double allTimeHighRanking = 1.0;
+  // The remainders should add up to 2
+  static double currentRank = 1.15;
+  // Diff between all time low and current rank.
+  static double overallGain = 1.20;
+  // Diff between first recorded rank and last recorded rank
+  static double allTimeChange = 1.40;
+  static double numDifferentRanks = 1.05;
+  static double packageRankHistoryCount = 1.1;
+  static double allTimeHighRanking = 1.05;
 }
