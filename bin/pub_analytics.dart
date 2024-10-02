@@ -54,9 +54,6 @@ void main(List<String> arguments) async {
   final printMode = argResults['print'] as bool;
   final didProvideFileName = argResults.rest.length == 1;
   final pkgCount = int.parse(argResults[count]);
-  String? currentDataFileName = didProvideFileName
-      ? getFileNameWithoutExtension(argResults.rest.first)
-      : null;
 
   try {
     // Get new data
@@ -64,54 +61,60 @@ void main(List<String> arguments) async {
       return packages.take(pkgCount).toList();
     });
 
-    // Generate new analytics using the new data
-    AllPackageAnalytics packageAnalytics = await generateAnalytics(
-      fileName: currentDataFileName,
-      newPubData: newPubData,
-    );
+    List<Package>? currentPeriodPackageData = didProvideFileName
+        ? await generateAnalytics(
+            fileName: FileNames.currentPeriodData(argResults.rest.first),
+            newPubData: newPubData)
+        : null;
+    List<Package> allTimePackageData = await generateAnalytics(
+        fileName: FileNames.allTimeData, newPubData: newPubData);
 
     // Save new analytics to the JSON 'database'
+    writePackageDataToJsonFile(FileNames.allTimeData, allTimePackageData);
     if (didProvideFileName) {
       writePackageDataToJsonFile(
-        currentDataFileName!,
-        packageAnalytics.currentPackageData!,
+        FileNames.currentPeriodData(argResults.rest.first),
+        currentPeriodPackageData!,
       );
     }
 
-    writePackageDataToJsonFile(
-      FileNames.allTimeRankHistory,
-      packageAnalytics.allTimePackageData,
-    );
-
     // optionally, do more stuff with the data
+
+    // print mover scores to console
+    // useful for testing the way mover score is calculated
     if (printMode) {
-      printMoversScores(
-        packageAnalytics,
-        printCurrent: didProvideFileName,
-      );
+      printMoversScores(allTimePackageData, currentPeriodPackageData);
     }
 
     // export 'all time' data to CSV
     if (export) {
+      writePackageOverviewToCSV(
+        FileNames.allTimeOverview,
+        Sheet(allTimePackageData),
+      );
       writeMoverScoreHistoryCsv(
         FileNames.allTimeMoverScoreHistory,
-        Sheet(packageAnalytics.allTimePackageData),
+        Sheet(allTimePackageData),
       );
       writeRankHistoryCsv(
         FileNames.allTimeRankHistory,
-        Sheet(packageAnalytics.allTimePackageData),
+        Sheet(allTimePackageData),
       );
     }
 
-    // export 'current' data to CSV
+    // export 'current period' data to CSV
     if (didProvideFileName && export) {
+      writePackageOverviewToCSV(
+        FileNames.currentPeriodOverview(argResults.rest.first),
+        Sheet(currentPeriodPackageData!),
+      );
       writeMoverScoreHistoryCsv(
-        FileNames.currentMoverScoreHistory(currentDataFileName!),
-        Sheet(packageAnalytics.currentPackageData!),
+        FileNames.currentPeriodMoverScoreHistory(argResults.rest.first),
+        Sheet(currentPeriodPackageData),
       );
       writeRankHistoryCsv(
-        FileNames.currentRankHistory(currentDataFileName),
-        Sheet(packageAnalytics.currentPackageData!),
+        FileNames.currentPeriodRankHistory(argResults.rest.first),
+        Sheet(currentPeriodPackageData),
       );
     }
   } catch (e) {

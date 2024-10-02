@@ -26,20 +26,25 @@ Future<List<Package>> loadPackageDataFromFile(String fileName) async {
   }).toList();
 }
 
-Future<void> generatePackageAssessmentAndWriteToCsv(
-    String filename, Sheet sheet) async {
+Future<void> writePackageOverviewToCSV(
+  String filename,
+  Sheet sheet,
+) async {
   final converter = ListToCsvConverter();
   final asCsv = sheet.packagesToCsv();
   final contents = converter.convert(asCsv);
-  final file = File('${filename}_assessment.txt');
+  final file = File('$filename.txt');
   await file.writeAsString(contents);
 }
 
-Future<void> writeRankHistoryCsv(String fileName, Sheet sheet) async {
+Future<void> writeRankHistoryCsv(
+  String fileName,
+  Sheet sheet,
+) async {
   final converter = ListToCsvConverter();
   final dataAsCsv = sheet.rankHistoriesToCsv;
   final contents = converter.convert(dataAsCsv);
-  final file = File('${fileName}_${FileNames.txtFileExtension}');
+  final file = File('$fileName${FileNames.txtFileExtension}');
   await file.writeAsString(contents);
 }
 
@@ -50,6 +55,6 @@ Future<void> writeMoverScoreHistoryCsv(
   final converter = ListToCsvConverter();
   final dataAsCsv = sheet.moverScoreHistoriesToCsv;
   final contents = converter.convert(dataAsCsv);
-  final file = File('${fileName}_${FileNames.txtFileExtension}');
+  final file = File('$fileName${FileNames.txtFileExtension}');
   await file.writeAsString(contents);
 }

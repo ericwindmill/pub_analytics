@@ -1,8 +1,5 @@
 import 'package:args/args.dart';
-import 'package:pub_analytics/generate_analytics.dart';
 import 'package:pub_analytics/model/package.dart';
-import 'package:pub_analytics/model/sheet.dart';
-import 'package:pub_analytics/util/package_util.dart';
 
 void printUsage(ArgParser parser) {
   print('''Usage: pub_analytics.dart [options] [filename]
@@ -11,9 +8,14 @@ Fetch pub packages ranked by overall score and write results as JSON to a
 [filename].json, preserving historical data if this isn't the first time the 
 script has been run. 
 
-The package can also create metrics based on rank history, and writes results as
-CSV file to [filename]_assessment.txt. Rank history is optionally saved as CSV
- in a file called called [filename]_history.txt.
+The package can also generate metrics based on rank history, 
+and will optionally write results as CSV files. 
+
+The script automatically saves all data to a file all_time_data.json, in
+addition to the file name that you pass in. In the future, you can pass in a 
+new file name, so you can have an 'all time' history and a time boxed history.
+
+See README for more information.
 
 [file] doesn't need an extension. If you add one, it will be stripped off.
 
@@ -24,14 +26,14 @@ By default, packages will be sorted by their current ranking, and in ascending o
 }
 
 void printMoversScores(
-  AllPackageAnalytics packageData, {
-  bool printCurrent = false,
+  List<Package> allTimeData,
+  List<Package>? currentPeriodData, {
   int printCount = 10,
 }) {
-  _printOneDataSet(packageData.allTimePackageData, printCount);
+  _printOneDataSet(allTimeData, printCount);
 
-  if (printCurrent) {
-    _printOneDataSet(packageData.currentPackageData!, printCount);
+  if (currentPeriodData != null) {
+    _printOneDataSet(currentPeriodData, printCount);
   }
 }
 

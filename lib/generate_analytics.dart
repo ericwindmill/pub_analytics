@@ -4,30 +4,14 @@ import 'package:pub_analytics/util/package_util.dart';
 
 import 'file_io.dart';
 import 'model/package.dart';
-import 'util/path_util.dart';
-
-/// allTimePackageData is the data collected since this script was written (December 2023)
-/// currentPackageData is the data saved to the file passed into the script (if any)
-typedef AllPackageAnalytics = ({
-  List<Package> allTimePackageData,
-  List<Package>? currentPackageData
-});
 
 /// Combines the newest data from pub.dev API with the
 /// existing data in the JSON file 'database'
-Future<AllPackageAnalytics> generateAnalytics({
-  String? fileName,
+Future<List<Package>> generateAnalytics({
+  required String fileName,
   required List<String> newPubData,
 }) async {
-  return (
-    allTimePackageData: await _addNewPubDataToPackages(
-      FileNames.allTimeRankHistory,
-      newPubData,
-    ),
-    currentPackageData: fileName != null
-        ? await _addNewPubDataToPackages(fileName, newPubData)
-        : null,
-  );
+  return _addNewPubDataToPackages(fileName, newPubData);
 }
 
 Future<List<Package>> _addNewPubDataToPackages(
