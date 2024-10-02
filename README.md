@@ -49,11 +49,9 @@ The following `txt` files are **optionally generated**, and only need to be gene
 * **[filename]_assessment.txt** - This CSV file includes all the other metrics, but does not include rank history data.
 * **alltime_rank_assessment.txt** - This file creates the assessment metrics against the all-time rank data.
 
-
 ## Usage
 
-Ideally, the script is run often and at set intervals (i.e. daily or weekly), to build a robust data set. Then, when you're ready to assess the data, you run the script with the `--csv` flag to generate the appropriate files. 
-
+Ideally, the script is run often and at set intervals (i.e. daily or weekly), to build a robust data set. Then, when you're ready to assess the data, you run the script with the `--csv` flag to generate the appropriate files.
 
 The generated CSV assessment files looks like this:
 
