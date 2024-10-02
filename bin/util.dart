@@ -1,37 +1,8 @@
 import 'package:args/args.dart';
+import 'package:pub_analytics/generate_analytics.dart';
 import 'package:pub_analytics/model/package.dart';
-
-enum SortDirection {
-  asc,
-  desc,
-}
-
-enum SortPackagesBy {
-  currentRank,
-  recentChange,
-  allTimeChange,
-}
-
-extension SortPackage on List<Package> {
-  sortPackages({
-    SortPackagesBy by = SortPackagesBy.currentRank,
-    SortDirection direction = SortDirection.desc,
-  }) {
-    sort((Package a, Package b) {
-      var (aField, bField) = switch (by) {
-        SortPackagesBy.currentRank => (a.currentRank, b.currentRank),
-        SortPackagesBy.recentChange => (
-            a.changeSinceLastRanking,
-            b.changeSinceLastRanking
-          ),
-        SortPackagesBy.allTimeChange => (a.allTimeChange, b.allTimeChange),
-      };
-
-      if (direction == SortDirection.asc) return aField.compareTo(bField);
-      return bField.compareTo(aField);
-    });
-  }
-}
+import 'package:pub_analytics/model/sheet.dart';
+import 'package:pub_analytics/util/package_util.dart';
 
 void printUsage(ArgParser parser) {
   print('''Usage: pub_analytics.dart [options] [filename]
@@ -50,4 +21,29 @@ ${parser.usage}
 
 By default, packages will be sorted by their current ranking, and in ascending order.
 ''');
+}
+
+void printMoversScores(
+  AllPackageAnalytics packageData, {
+  bool printCurrent = false,
+  int printCount = 10,
+}) {
+  _printOneDataSet(packageData.allTimePackageData, printCount);
+
+  if (printCurrent) {
+    _printOneDataSet(packageData.currentPackageData!, printCount);
+  }
+}
+
+void _printOneDataSet(
+  List<Package> packageData,
+  int take,
+) {
+  final copy = packageData;
+  copy.sort((b, a) => a.currentMoverScore.compareTo(b.currentMoverScore));
+  final toPrint = copy.take(take);
+  print('--- Top $take by movers score (all time) ---');
+  for (var p in toPrint) {
+    print('${p.name}  --  ${p.currentMoverScore}');
+  }
 }

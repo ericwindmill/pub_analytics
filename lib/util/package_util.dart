@@ -11,12 +11,10 @@ List<Package> createPackageListFromPub(List<String> orderedPackageNames) {
   final date = DateTime.now();
   final packages = <Package>[];
   for (var i = 0; i < orderedPackageNames.length; i++) {
-    packages.add(
-      Package.fromPub(
-        packageName: orderedPackageNames[i],
-        rank: i + 1,
-      )..addRankToRankHistory(date, i + 1),
-    );
+    packages.add(Package.fromPub(
+      packageName: orderedPackageNames[i],
+      rank: i + 1,
+    )..addRankToRankHistory(date, i + 1));
   }
 
   return packages;

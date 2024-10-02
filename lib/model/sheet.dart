@@ -6,14 +6,43 @@ import 'package.dart';
 class Sheet {
   List<DateTime> dates = [];
   List<Package> packages;
-  int packageHistoryCount = 0;
 
   Sheet(this.packages) {
     final p = getPackageWithMostHistoryData(packages);
-    packageHistoryCount = p.rankHistory.length;
     for (var r in p.rankHistory.reversed) {
       dates.add(r.date);
     }
+  }
+
+  List<List<String>> packagesToCsv() {
+    final csvAssessmentData = <List<String>>[
+      [
+        'Name',
+        'Mover Score',
+        'Pub Rank',
+        'All time high pub rank',
+        'All time low pub rank',
+      ],
+      [
+        'package name',
+        'Calculated score based on all the other metrics',
+        'current rank',
+        'highest ever package rank',
+        'lowest ever package rank',
+      ],
+    ];
+
+    for (final package in packages) {
+      csvAssessmentData.add([
+        package.name,
+        package.currentMoverScore.toString(),
+        package.currentRank.toString(),
+        package.allTimeHighRanking.toString(),
+        package.allTimeLowRanking.toString(),
+      ]);
+    }
+
+    return csvAssessmentData;
   }
 
   /// Creates CSV list formatted specifically for each chart creation.
@@ -46,70 +75,33 @@ class Sheet {
     return chartData;
   }
 
-  List<List<String>> packagesToCsv() {
-    final csvAssessmentData = <List<String>>[
+  List<List<String>> get moverScoreHistoriesToCsv {
+    final formattedDates =
+        dates.map((date) => '${date.month}/${date.day}/${date.year}');
+
+    final csvData = <List<String>>[
       [
         'Name',
-        'Mover Score',
-        'Rank',
-        'Change since previous',
-        'Overall change',
-        'All time change',
-        'All time high',
-        'All time low',
-        'Most common rank',
-        'Most common rank occurrence',
-        'Second most common rank',
-        'Second most common rank occurrence',
-        'Continued...',
-      ],
-      [
-        'package name',
-        'Score based on all the other metrics',
-        'current rank',
-        'distance between current rank current-1 rank',
-        'distance between package all-time low and the current rank',
-        'distance between package least current rank and the most current rank',
-        'highest package rank',
-        'lowest package rank',
-        'rank that occurs most often',
-        'number of times that rank has occurred',
-        'etc',
+        ...formattedDates,
       ],
     ];
 
-    for (final package in packages) {
-      final asCsvRow = packageToCsvRow(package);
-      csvAssessmentData.add(asCsvRow);
+    for (var p in packages) {
+      final packageData = [p.name];
+      for (var d in dates) {
+        final dataForDate = p.moverScoreHistory.where((rank) => rank.date == d);
+        if (dataForDate.length == 1) {
+          packageData.add(dataForDate.first.rank.toString());
+        } else if (dataForDate.isEmpty) {
+          packageData.add('');
+        } else {
+          packageData.add('');
+          print("Multiple mover score entries for package ${p.name} on $d}");
+        }
+      }
+      csvData.add(packageData);
     }
 
-    return csvAssessmentData;
-  }
-
-  List<String> packageToCsvRow(Package package) {
-    final rankDispersionToCsv = <String>[];
-    final sortedDispersion = Map.fromEntries(
-        package.rankDispersion.entries.toList()
-          ..sort((a, b) => b.value.compareTo(a.value)));
-    sortedDispersion.forEach((key, value) {
-      rankDispersionToCsv.addAll([
-        key.toString(),
-        value.toString(),
-      ]);
-    });
-
-    return [
-      package.name,
-      package
-          .getPackageMoverScore(packageHistoryCount, packages.length)
-          .toString(),
-      package.currentRank.toString(),
-      package.changeSinceLastRanking.toString(),
-      package.overallChange.toString(),
-      package.allTimeChange.toString(),
-      package.allTimeHighRanking.toString(),
-      package.allTimeLowRanking.toString(),
-      ...rankDispersionToCsv,
-    ];
+    return csvData;
   }
 }
