@@ -31,7 +31,10 @@ class Package {
   }
 
   void addMoverScoreToHistory(
-      DateTime date, int totalHistoryCount, int totalPackageCount) {
+    DateTime date,
+    int totalHistoryCount,
+    int totalPackageCount,
+  ) {
     final score = _calculateMoverScore(totalHistoryCount, totalPackageCount);
     moverScoreHistory.insert(0, Ranking(date, score));
   }

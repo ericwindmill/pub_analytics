@@ -35,7 +35,9 @@ class Sheet {
     for (final package in packages) {
       csvAssessmentData.add([
         package.name,
-        package.currentMoverScore.toString(),
+        package.moverScoreHistory.isNotEmpty
+            ? package.currentMoverScore.toString()
+            : '',
         package.currentRank.toString(),
         package.allTimeHighRanking.toString(),
         package.allTimeLowRanking.toString(),
