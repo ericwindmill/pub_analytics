@@ -9,12 +9,16 @@ class Package {
   /// Rank history is descending by date
   final List<Ranking> rankHistory;
 
+  /// Mover score history is descending by date
+  final List<Ranking> moverScoreHistory;
+
   int allTimeHighRanking;
   int allTimeLowRanking;
 
   Package({
     required this.name,
     required this.rankHistory,
+    required this.moverScoreHistory,
     required this.allTimeHighRanking,
     required this.allTimeLowRanking,
   });
@@ -24,6 +28,15 @@ class Package {
     if (rank > allTimeLowRanking) allTimeLowRanking = rank;
 
     rankHistory.insert(0, Ranking(date, rank));
+  }
+
+  void addMoverScoreToHistory(
+    DateTime date,
+    int totalHistoryCount,
+    int totalPackageCount,
+  ) {
+    final score = _calculateMoverScore(totalHistoryCount, totalPackageCount);
+    moverScoreHistory.insert(0, Ranking(date, score));
   }
 
   /// A map of a given ranking (for example, 12), and the number of times
@@ -55,6 +68,8 @@ class Package {
 
   int get currentRank => rankHistory.first.rank;
 
+  int get currentMoverScore => moverScoreHistory.first.rank;
+
   /// Change from second most recent ranking to most recent ranking
   int get changeSinceLastRanking {
     if (rankHistory.length < 2) return 0;
@@ -70,6 +85,59 @@ class Package {
   /// distance between lowest ever score and current score
   int get overallChange {
     return allTimeLowRanking - currentRank;
+  }
+
+  // DateTime is passed in so all packages that are ranked on any given date
+  // have the exact same date time
+  factory Package.fromPub({
+    required String packageName,
+    required int rank,
+  }) {
+    final package = Package(
+      name: packageName,
+      rankHistory: [],
+      moverScoreHistory: [],
+      allTimeHighRanking: rank,
+      allTimeLowRanking: rank,
+    );
+    return package;
+  }
+
+  factory Package.fromMap(
+    Map<String, Object?> map,
+  ) {
+    if (map
+        case {
+          'name': String name,
+          'allTimeHighRanking': int high,
+          'allTimeLowRanking': int low,
+          'rankHistory': _,
+          'moverScoreHistory': _,
+        }) {
+      return Package(
+        name: name,
+        allTimeHighRanking: high,
+        allTimeLowRanking: low,
+        rankHistory: (map['rankHistory'] as List)
+            .map((r) => Ranking.fromMap(r))
+            .toList(),
+        moverScoreHistory: (map['moverScoreHistory'] as List)
+            .map((r) => Ranking.fromMap(r))
+            .toList(),
+      );
+    } else {
+      throw "Data is malformed: ${map.toString()}";
+    }
+  }
+
+  Map<String, Object?> toMap() {
+    return {
+      'name': name,
+      'allTimeHighRanking': allTimeHighRanking,
+      'allTimeLowRanking': allTimeLowRanking,
+      'rankHistory': rankHistory.map((r) => r.toMap()).toList(),
+      'moverScoreHistory': moverScoreHistory.map((r) => r.toMap()).toList(),
+    };
   }
 
   /// This attempts to take all the relevant stats, and combine them into one score.
@@ -90,7 +158,7 @@ class Package {
   /// * Convert the metric score to that range
   /// * multiple the new metric score by its weight
   ///
-  int getPackageMoverScore(
+  int _calculateMoverScore(
     int totalHistoryCount,
     int totalPackageCount,
   ) {
@@ -153,53 +221,6 @@ class Package {
 
     /// There are 6 metrics total
     return (totalPoints / 6).toInt();
-  }
-
-  // DateTime is passed in so all packages that are ranked on any given date
-  // have the exact same date time
-  factory Package.fromPub({
-    required String packageName,
-    required int rank,
-  }) {
-    final package = Package(
-      name: packageName,
-      rankHistory: [],
-      allTimeHighRanking: rank,
-      allTimeLowRanking: rank,
-    );
-    return package;
-  }
-
-  factory Package.fromMap(
-    Map<String, Object?> map,
-  ) {
-    if (map
-        case {
-          'name': String name,
-          'allTimeHighRanking': int high,
-          'allTimeLowRanking': int low,
-          'rankHistory': _,
-        }) {
-      return Package(
-        name: name,
-        allTimeHighRanking: high,
-        allTimeLowRanking: low,
-        rankHistory: (map['rankHistory'] as List)
-            .map((r) => Ranking.fromMap(r))
-            .toList(),
-      );
-    } else {
-      throw "Data is malformed: ${map.toString()}";
-    }
-  }
-
-  Map<String, Object?> toMap() {
-    return {
-      'name': name,
-      'allTimeHighRanking': allTimeHighRanking,
-      'allTimeLowRanking': allTimeLowRanking,
-      'rankHistory': rankHistory.map((r) => r.toMap()).toList(),
-    };
   }
 }
 

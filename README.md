@@ -7,17 +7,30 @@ assess package ranking changes overtime.
 
 ### Rank history and metrics
 
-The script, when ran, adds a new data point to any given packages "rank history", which contains a datetime and ranking. For example, a package's recent history could be:
+The script, when ran, adds a new data point to any given packages "rank history" and "mover score", both of which contain a datetime and ranking. For example, a single record may look like this.
 
-```
-package: {
-   rankHistory: [
-     { date: 1/1/24, rank: 2 }
-     { date: 1/2/24, rank: 4 }
-     { date: 1/3/24, rank: 7 }
-     .... 
-   ]
-}
+```json
+  {
+    "name": "image_picker",
+    "allTimeHighRanking": 2,
+    "allTimeLowRanking": 2,
+    "rankHistory": [
+      {
+        "date": 1727885891909,
+        "rank": 2
+      },
+      {
+        "date": 1727885873687,
+        "rank": 2
+      }
+    ],
+    "moverScoreHistory": [
+      {
+        "date": 1727885891909,
+        "rank": 754
+      }
+    ]
+  }
 ```
 
 The script then uses the existing history to create the following metrics each time a new "ranking" is added to rank history. (All metrics are as of the most recent time the script was run.)
@@ -25,6 +38,8 @@ The script then uses the existing history to create the following metrics each t
 * Mover score - A weighted average of all other metrics
 * All-time low rank
 * All-time high rank
+
+The script also calculates the following metrics, but they aren't written to the CSV files.
 * Changes since previous - the distance between the current rank and the rank the last time the script was run
 * Overall change - the distance between the package's all-time low and the current rank
 * All-time change - the distance between the package's least current rank and the most current rank
@@ -49,83 +64,33 @@ The following `txt` files are **optionally generated**, and only need to be gene
 * **[filename]_assessment.txt** - This CSV file includes all the other metrics, but does not include rank history data.
 * **alltime_rank_assessment.txt** - This file creates the assessment metrics against the all-time rank data.
 
-
 ## Usage
 
-Ideally, the script is run often and at set intervals (i.e. daily or weekly), to build a robust data set. Then, when you're ready to assess the data, you run the script with the `--csv` flag to generate the appropriate files. 
+Ideally, the script is run often and at set intervals (i.e. daily or weekly), to build a robust data set. Then, when you're ready to assess the data, you run the script with the `--export` flag to generate the appropriate files.
 
-
-The generated CSV assessment files looks like this:
-
-```text
-Name,Current rank,Change since previous,Overall gain,All time change,All time high,All time low,Most common rank,Most common rank occurrence,Second most common rank,Second most common rank occurrence,Continued...
-googleapis_auth,1000,-12,1359,32,973,2359,1032,5,1058,4,1082,2,2312,2,1036,2,1000,1,988,1,973,1,2316,1,2359,1,1086,1,1081,1,1053,1,1050,1,1037,1
-shared_preferences,2,0,738,721,1,740,1,12,2,11,740,1,723,1
 ```
-
-The generated json looks like this:
-
-```json
-{
-  "name": "http",
-  "allTimeHighRanking": 1,
-  "allTimeLowRanking": 734,
-  "rankHistory": [
-    {
-      "date": 1709225014616,
-      "rank": 1
-    },
-    {
-      "date": 1709060660004,
-      "rank": 1
-    },
-    {
-      "date": 1708526151271,
-      "rank": 1
-    },
-    {
-      "date": 1707921606669,
-      "rank": 1
-    },
-    {
-      "date": 1707316874898,
-      "rank": 1
-    },
-    ...
-  ]
-}
-```
-
-**Note** that `date` is in millisecondsSinceEpoch in the JSON.
-
-
-```markdown
 Usage: pub_analytics.dart [options] [filename]
 
 Fetch pub packages ranked by overall score and write results as JSON to a
 [filename].json, preserving historical data if this isn't the first time the
 script has been run.
 
-The package can also create metrics based on rank history, and writes results as
-CSV file to [filename]_assessment.txt. Rank history is optionally saved as CSV
-in a file called called [filename]_history.txt.
+The package can also generate metrics based on rank history,
+and will optionally write results as CSV files.
+
+The script automatically saves all data to a file all_time_data.json, in
+addition to the file name that you pass in. In the future, you can pass in a
+new file name, so you can have an 'all time' history and a time boxed history.
+
+See README for more information.
 
 [file] doesn't need an extension. If you add one, it will be stripped off.
 
-    --[no-]csv           When true, the script will also generate a CSV file with the data called <filename>_history.txt
--a, --[no-]assessment    When true, the script will also generate a CSV file with computed metrics called <filename>_assessment.txt
--s, --sort-by            [currentRank (default), allTimeChange, recentChange]
--d, --sort-dir           [asc (default), desc]
--c, --count              The number of the top N packages to be included in the dataset. (defaults to "3000")
--p, --[no-]print         Prints the packages with the all-time top 10 movers score. If true, no data will be written to any files. Useful for testing.
---help               Print help text and exit
+    --[no-]export    When true, the script will also generate a CSV file with the data
+-c, --count          The number of the top N packages to be included in the dataset.
+(defaults to "3000")
+-p, --[no-]print     Prints the packages with the all-time top 10 movers score. If true, no data will be written to any files. Useful for testing.
+--help           Print help text and exit
 
 By default, packages will be sorted by their current ranking, and in ascending order.
 ```
-
-### Sorting
-
-By default, The script sorts the packages in ascending order by the packages
-most recent rank.
-
-You can change the sort order and direction with flags passed to the script.

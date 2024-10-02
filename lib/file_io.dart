@@ -2,11 +2,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:csv/csv.dart';
+import 'package:pub_analytics/util/path_util.dart';
 import 'model/package.dart';
 import 'model/sheet.dart';
 
 Future<void> writePackageDataToJsonFile(
-    String fileName, List<Package> packages) async {
+  String fileName,
+  List<Package> packages,
+) async {
   final packagesAsJson = packages.map((p) => p.toMap()).toList();
   final contents = jsonEncode(packagesAsJson);
   final file = File('$fileName.json');
@@ -23,18 +26,35 @@ Future<List<Package>> loadPackageDataFromFile(String fileName) async {
   }).toList();
 }
 
-Future<void> generatePackageAssessmentCsv(String filename, Sheet sheet) async {
+Future<void> writePackageOverviewToCSV(
+  String filename,
+  Sheet sheet,
+) async {
   final converter = ListToCsvConverter();
   final asCsv = sheet.packagesToCsv();
   final contents = converter.convert(asCsv);
-  final file = File('${filename}_assessment.txt');
+  final file = File('$filename.txt');
   await file.writeAsString(contents);
 }
 
-Future<void> generateHistoryCsv(String filename, Sheet sheet) async {
+Future<void> writeRankHistoryCsv(
+  String fileName,
+  Sheet sheet,
+) async {
   final converter = ListToCsvConverter();
-  final chartFriendlyDataAsCsv = sheet.rankHistoriesToCsv;
-  final contents = converter.convert(chartFriendlyDataAsCsv);
-  final file = File('${filename}_history.txt');
+  final dataAsCsv = sheet.rankHistoriesToCsv;
+  final contents = converter.convert(dataAsCsv);
+  final file = File('$fileName${FileNames.txtFileExtension}');
+  await file.writeAsString(contents);
+}
+
+Future<void> writeMoverScoreHistoryCsv(
+  String fileName,
+  Sheet sheet,
+) async {
+  final converter = ListToCsvConverter();
+  final dataAsCsv = sheet.moverScoreHistoriesToCsv;
+  final contents = converter.convert(dataAsCsv);
+  final file = File('$fileName${FileNames.txtFileExtension}');
   await file.writeAsString(contents);
 }
