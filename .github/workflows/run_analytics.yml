@@ -13,12 +13,22 @@ jobs:
   run-analytics:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           token: ${{secrets.PAT}}
+
       - uses: dart-lang/setup-dart@v1
-      - run: |
-          dart pub get && dart bin/pub_analytics.dart ./assets/2024_q4 --export && git push
+
+      - name: Get dependencies
+        run: dart pub get
+
+      - name: Run analytics
+        run:  dart bin/pub_analytics.dart ./assets/2024_q4 --export
+
+      - name: Git push
+        run: git push
       
 
 
