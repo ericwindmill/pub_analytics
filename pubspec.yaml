@@ -10,12 +10,8 @@ environment:
 dependencies:
   args: ^2.4.2
   csv: ^5.1.1
-  google_sign_in: ^6.1.6
-  googleapis: ^11.4.0
-  gsheets: ^0.5.0
   http: ^1.1.0
   path: ^1.9.0
-  # path: ^1.8.0
 
 dev_dependencies:
   lints: ^2.0.0
