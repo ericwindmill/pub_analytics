@@ -1,4 +1,5 @@
 import 'package:args/args.dart';
+import 'package:logging/logging.dart';
 import 'package:pub_analytics/model/package.dart';
 
 void printUsage(ArgParser parser) {
@@ -47,5 +48,21 @@ void _printOneDataSet(
   print('--- Top $take by movers score (all time) ---');
   for (var p in toPrint) {
     print('${p.name}  --  ${p.currentMoverScore}');
+  }
+}
+
+class Log {
+  final Logger _logger = Logger('pub_analytics logger');
+
+  Log() {
+    _logger.onRecord.listen((record) {
+      print('${_formatDate(record.time)}: ${record.message}');
+    });
+  }
+
+  void p(String message) => _logger.warning(message);
+
+  String _formatDate(DateTime dt) {
+    return '${dt.year}-${dt.month}-${dt.day} at ${dt.hour}:${dt.minute}:${dt.second}.${dt.millisecond}';
   }
 }

@@ -2,6 +2,7 @@ import 'dart:io' as io;
 
 import 'package:args/args.dart';
 import 'package:http/http.dart' as http;
+import 'package:logging/logging.dart';
 import 'package:pub_analytics/generate_analytics.dart';
 import 'package:pub_analytics/pub_analytics.dart';
 
@@ -11,8 +12,10 @@ final count = 'count';
 final printFlag = 'print';
 final exportFlag = 'export';
 final defaultPackageCount = 3000;
+final Log logger = Log();
 
 void main(List<String> arguments) async {
+  logger.p('starting script');
   io.exitCode = 0;
   final argParser = ArgParser()
     ..addFlag(
@@ -117,8 +120,9 @@ void main(List<String> arguments) async {
         Sheet(currentPeriodPackageData),
       );
     }
+    logger.p('finished script successfully');
   } catch (e) {
-    print(e);
+    logger.p('error in script! -- $e');
     rethrow;
   } finally {
     client.close();
