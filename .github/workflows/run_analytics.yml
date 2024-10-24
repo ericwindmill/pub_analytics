@@ -24,7 +24,7 @@ jobs:
         run:  dart bin/pub_analytics.dart ./assets/2024_q4 --export
 
       - name: Git push
-        run: git push
+        run: git add -A && git commit -m 'check in weekly analytics' && git push
       
 
 
