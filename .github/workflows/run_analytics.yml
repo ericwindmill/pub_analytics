@@ -24,7 +24,10 @@ jobs:
         run:  dart bin/pub_analytics.dart ./assets/2024_q4 --export
 
       - name: Git push
-        run: git add -A && git commit -m 'check in weekly analytics' && git push
+        run: |
+          git config user.email "eric@ericwindmill.com"
+          git config user.name "Eric Windmill"
+          git add -A && git commit -m 'check-in weekly analytics' && git push
       
 
 
